@@ -40,7 +40,11 @@ const Leaderboard = () => {
         <Link to="/" className="text-blue-600 hover:underline">← Retour</Link>
       </div>
 
-      {session && <CollectionGrid />}
+      {session && (
+        <section id="collection" className="scroll-mt-24">
+          <CollectionGrid />
+        </section>
+      )}
 
       <div>
         <h2 className="text-xl font-semibold mb-3">Top joueurs</h2>

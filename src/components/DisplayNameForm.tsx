@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/components/auth/SessionProvider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { showSuccess } from "@/utils/toast";
 
 const DisplayNameForm = () => {
@@ -41,16 +42,25 @@ const DisplayNameForm = () => {
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-3xl mx-auto">
-      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-4 flex gap-3 items-center">
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Pseudo (optionnel)"
-          className="flex-1"
-        />
-        <Button type="submit" disabled={saving || !name.trim()}>
-          {saving ? "Enregistrement..." : "Enregistrer"}
-        </Button>
+      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-4 flex flex-col gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="gamer-name">Ton pseudo gamer</Label>
+          <Input
+            id="gamer-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex: Y0uriX, LuckyMax, ... "
+            className="flex-1"
+          />
+          <p className="text-xs text-gray-500">
+            Ce pseudo apparaîtra dans le classement et sur ta collection. Tu peux le modifier à tout moment.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={saving || !name.trim()}>
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </Button>
+        </div>
       </div>
     </form>
   );

@@ -15,13 +15,22 @@ const Index = () => {
         <AuthStatus />
       </div>
 
-      <DisplayNameForm />
+      <div className="w-full max-w-3xl space-y-3">
+        <h2 className="text-lg font-semibold">Votre pseudo gamer</h2>
+        <p className="text-sm text-gray-600">
+          Choisissez un pseudo pour sauvegarder votre évolution (points, tirages, collection).
+        </p>
+        <DisplayNameForm />
+      </div>
 
       <UserPoints />
 
       <WheelOfFortune />
 
       <div className="flex gap-3">
+        <Button asChild variant="default">
+          <Link to="/leaderboard#collection">Votre collection</Link>
+        </Button>
         <Button asChild variant="secondary">
           <Link to="/leaderboard">Voir le classement</Link>
         </Button>
