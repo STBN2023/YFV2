@@ -76,7 +76,7 @@ const DisplayNameForm = () => {
       });
   }, [userId]);
 
-  // Vérification de la disponibilité (même sans userId)
+  // Vérification de la disponibilité: si pas de session encore, ne bloque pas (on assume disponible)
   useEffect(() => {
     if (!debouncedName || !isValid) {
       setAvailable(null);
@@ -86,17 +86,35 @@ const DisplayNameForm = () => {
     let cancelled = false;
     setChecking(true);
 
-    const query = supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .ilike("first_name", debouncedName);
+    const run = async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) {
+        if (!cancelled) {
+          setAvailable(true);
+          setChecking(false);
+        }
+        return;
+      }
 
-    query.then(({ count, error }) => {
+      const { count, error } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .ilike("first_name", debouncedName);
+
       if (cancelled) return;
-      if (error) throw error;
+
+      if (error) {
+        // En cas d'erreur (RLS, réseau…), ne pas bloquer l'enregistrement
+        setAvailable(true);
+        setChecking(false);
+        return;
+      }
+
       setAvailable(!count || count === 0);
       setChecking(false);
-    });
+    };
+
+    run();
 
     return () => {
       cancelled = true;
@@ -171,7 +189,6 @@ const DisplayNameForm = () => {
     setSaving(false);
     setSaved(true);
     showSuccess("Pseudo enregistré, bonne partie !");
-    // Redirection rapide vers la roue
     setTimeout(() => navigate("/jeu"), 350);
     setTimeout(() => setSaved(false), 1500);
   };

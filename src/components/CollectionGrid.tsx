@@ -17,7 +17,11 @@ const CollectionGrid = () => {
   const { prizes } = usePrizes();
 
   const fetchCounts = () => {
-    if (!userId) return;
+    if (!userId) {
+      // Pas de session: pas de gains -> tout "Caché"
+      setCounts({});
+      return;
+    }
     supabase
       .from("spins")
       .select("prize_label")
@@ -44,8 +48,6 @@ const CollectionGrid = () => {
   }, []);
 
   const items = useMemo(() => prizes, [prizes]);
-
-  if (!userId) return null;
 
   return (
     <div className="space-y-3">

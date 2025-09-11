@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { usePreloadImages } from "@/hooks/use-preload-images";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,10 +68,10 @@ const WheelOfFortune: React.FC = () => {
   }, [imagesReady]);
 
   const ensureAuth = async () => {
-    // S'assure qu'une session existe; sinon, crée une session anonyme avant de jouer
     let s = session;
     if (!s) {
-      const { data } = await supabase.auth.signInAnonymously();
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) return false;
       s = data.session ?? (await supabase.auth.getSession()).data.session ?? null;
     }
     return !!s;
@@ -81,7 +81,10 @@ const WheelOfFortune: React.FC = () => {
     if (spinning || prizes.length === 0) return;
 
     const ok = await ensureAuth();
-    if (!ok) return;
+    if (!ok) {
+      showError("Impossible d'initialiser une session. Réessayez.");
+      return;
+    }
 
     const wheel = wheelRef.current;
     if (!wheel) return;
@@ -101,12 +104,10 @@ const WheelOfFortune: React.FC = () => {
     const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
 
-    // Reset transition propre
     wheel.style.transition = "none";
     wheel.style.transform = `rotate(${currentRotationRef.current}deg)`;
     void wheel.offsetHeight;
 
-    // Spin + son cliquetis progressif
     requestAnimationFrame(() => {
       wheel.style.transition = `transform ${duration}ms ${easing}`;
       wheel.style.transform = `rotate(${destination}deg)`;
@@ -131,7 +132,6 @@ const WheelOfFortune: React.FC = () => {
         p_points: gained,
       });
 
-      // Gagné: son + effet + MAJ UI
       playWinSound();
       const pool: EffectType[] = ["confetti", "smoke", "burst"];
       const randomEffect = pool[Math.floor(Math.random() * pool.length)];
@@ -139,7 +139,6 @@ const WheelOfFortune: React.FC = () => {
       if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
       effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 2800);
 
-      // MAJ points/collection
       window.dispatchEvent(new CustomEvent("points-updated"));
       showSuccess(`Pseudo confirmé. Bonne partie ! Résultat: ${selected} (+${gained} points)`);
     };
@@ -155,16 +154,13 @@ const WheelOfFortune: React.FC = () => {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="relative w-72 h-72 md:w-96 md:h-96 select-none">
-        {/* Pointeur */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
           <div className="w-0 h-0 border-l-[14px] border-r-[14px] border-b-[24px] border-l-transparent border-r-transparent border-b-red-500 drop-shadow-lg"></div>
           <div className="w-3 h-3 bg-red-500 rounded-full mx-auto -mt-1 shadow" />
         </div>
 
-        {/* Ombre externe */}
         <div className="absolute inset-0 rounded-full shadow-2xl" />
 
-        {/* Roue */}
         <div
           ref={wheelRef}
           className="relative w-full h-full rounded-full border-8 border-white bg-white overflow-hidden"
@@ -176,7 +172,6 @@ const WheelOfFortune: React.FC = () => {
             willChange: "transform",
           }}
         >
-          {/* Lignes de séparation */}
           {Array.from({ length: segmentCount }).map((_, i) => (
             <div
               key={`sep-${i}`}
@@ -187,7 +182,6 @@ const WheelOfFortune: React.FC = () => {
             </div>
           ))}
 
-          {/* Étiquettes */}
           {segments.map((label, i) => {
             const center = i * segmentAngle + segmentAngle / 2;
             return (
@@ -205,10 +199,8 @@ const WheelOfFortune: React.FC = () => {
             );
           })}
 
-          {/* Anneau intérieur */}
           <div className="absolute inset-4 rounded-full ring-1 ring-white/30 pointer-events-none" />
 
-          {/* Moyeu central */}
           <div className="absolute inset-1/4 md:inset-[28%] rounded-full bg-white flex items-center justify-center shadow-inner">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white to-gray-200" />
             <div className="relative z-10 text-center">
