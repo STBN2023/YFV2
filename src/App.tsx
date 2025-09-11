@@ -10,6 +10,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Game from "./pages/Game";
 import Pseudo from "./pages/Pseudo";
 import { SessionProvider } from "@/components/auth/SessionProvider";
+import Collection from "./pages/Collection";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/pseudo" element={<Pseudo />} />
             <Route path="/jeu" element={<Game />} />
+            <Route path="/collection" element={<Collection />} />
             <Route path="/login" element={<Login />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

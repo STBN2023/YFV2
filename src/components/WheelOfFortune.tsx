@@ -10,12 +10,14 @@ import { supabase } from "@/integrations/supabase/client";
 import EffectsOverlay from "@/components/EffectsOverlay";
 import { playReadyChime, playWinSound, playSpinTicks } from "@/utils/sfx";
 import { usePrizes } from "@/hooks/use-prizes";
+import { useSession } from "@/components/auth/SessionProvider";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
 const normalizeAngle = (deg: number) => ((deg % 360) + 360) % 360;
 
 const WheelOfFortune: React.FC = () => {
+  const { session, loading } = useSession();
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
@@ -63,11 +65,23 @@ const WheelOfFortune: React.FC = () => {
       if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
       effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 1500);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imagesReady]);
+
+  const ensureAuth = async () => {
+    // S'assure qu'une session existe; sinon, crée une session anonyme avant de jouer
+    let s = session;
+    if (!s) {
+      const { data } = await supabase.auth.signInAnonymously();
+      s = data.session ?? (await supabase.auth.getSession()).data.session ?? null;
+    }
+    return !!s;
+  };
 
   const spinWheel = async () => {
     if (spinning || prizes.length === 0) return;
+
+    const ok = await ensureAuth();
+    if (!ok) return;
 
     const wheel = wheelRef.current;
     if (!wheel) return;
@@ -117,6 +131,7 @@ const WheelOfFortune: React.FC = () => {
         p_points: gained,
       });
 
+      // Gagné: son + effet + MAJ UI
       playWinSound();
       const pool: EffectType[] = ["confetti", "smoke", "burst"];
       const randomEffect = pool[Math.floor(Math.random() * pool.length)];
@@ -124,8 +139,9 @@ const WheelOfFortune: React.FC = () => {
       if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
       effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 2800);
 
+      // MAJ points/collection
       window.dispatchEvent(new CustomEvent("points-updated"));
-      showSuccess(`Résultat: ${selected} (+${gained} points)`);
+      showSuccess(`Pseudo confirmé. Bonne partie ! Résultat: ${selected} (+${gained} points)`);
     };
 
     wheel.addEventListener("transitionend", onEnd, { once: true });
@@ -214,7 +230,7 @@ const WheelOfFortune: React.FC = () => {
 
       <Button
         onClick={spinWheel}
-        disabled={spinning || prizes.length === 0}
+        disabled={spinning || prizes.length === 0 || !imagesReady || loading}
         className="px-6 py-2 font-semibold shadow-md"
       >
         {spinning ? "En cours..." : "Tourner la roue"}

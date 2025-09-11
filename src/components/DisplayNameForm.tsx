@@ -170,7 +170,7 @@ const DisplayNameForm = () => {
 
     setSaving(false);
     setSaved(true);
-    showSuccess("Pseudo enregistré !");
+    showSuccess("Pseudo enregistré, bonne partie !");
     // Redirection rapide vers la roue
     setTimeout(() => navigate("/jeu"), 350);
     setTimeout(() => setSaved(false), 1500);
