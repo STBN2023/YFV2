@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
 import { CheckCircle2, XCircle, Loader2, Sparkles, RefreshCcw, X, AtSign } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const NAME_REGEX = /^[a-zA-Z0-9_.-]{3,20}$/;
 
@@ -52,14 +52,12 @@ const DisplayNameForm = () => {
   const [seed, setSeed] = useState(0);
   const suggestions = useMemo(() => [makeSuggestion(), makeSuggestion(), makeSuggestion()], [seed]);
 
-  // On ne bloque pas l'UI sans session
   useEffect(() => {
     if (!userId) {
       setInitialLoaded(true);
     }
   }, [userId]);
 
-  // Charger pseudo existant si session
   useEffect(() => {
     if (!userId) return;
     supabase
@@ -67,14 +65,12 @@ const DisplayNameForm = () => {
       .select("first_name")
       .eq("id", userId)
       .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) return; // laisser l'UI fonctionner quand même
+      .then(({ data }) => {
         setName(data?.first_name ?? "");
         setInitialLoaded(true);
       });
   }, [userId]);
 
-  // Vérification disponibilité — non bloquante sans session
   useEffect(() => {
     if (!debouncedName || !isValid) {
       setAvailable(null);
@@ -117,11 +113,27 @@ const DisplayNameForm = () => {
     };
   }, [debouncedName, isValid]);
 
-  const triggerAnon = async () => {
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) {
-      showError("Impossible de créer une session. Réessayez.");
+  const tryAnonymous = async () => {
+    const fn: any = (supabase as any).auth?.signInAnonymously;
+    if (typeof fn !== "function") {
+      showError("Authentification anonyme indisponible dans le client. Activez ‘Anonymous’ dans Supabase, ou utilisez la page /login.");
+      return { ok: false as const };
     }
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        showError(`Impossible de créer une session: ${error.message}. Vous pouvez aussi vous connecter sur /login.`);
+        return { ok: false as const };
+      }
+      return { ok: true as const, userId: data?.user?.id };
+    } catch (e: any) {
+      showError(`Erreur de session: ${e?.message ?? "inconnue"}. Essayez /login.`);
+      return { ok: false as const };
+    }
+  };
+
+  const triggerAnon = async () => {
+    await tryAnonymous();
   };
 
   const isReady = initialLoaded;
@@ -167,21 +179,20 @@ const DisplayNameForm = () => {
 
     setSaving(true);
 
-    // S'assurer d'avoir une session anonyme si nécessaire
     let uid = userId;
+
     if (!uid) {
-      const { data, error } = await supabase.auth.signInAnonymously();
-      if (error) {
+      const res = await tryAnonymous();
+      if (!res.ok) {
         setSaving(false);
-        showError("Impossible de créer une session. Réessayez.");
         return;
       }
-      uid = data?.user?.id ?? (await supabase.auth.getSession()).data.session?.user?.id ?? undefined;
+      uid = res.userId ?? (await supabase.auth.getSession()).data.session?.user?.id ?? undefined;
     }
 
     if (!uid) {
       setSaving(false);
-      showError("Session introuvable. Réessayez.");
+      showError("Session introuvable. Essayez /login.");
       return;
     }
 
@@ -191,7 +202,7 @@ const DisplayNameForm = () => {
 
     if (error) {
       setSaving(false);
-      showError("Enregistrement impossible pour le moment.");
+      showError(`Enregistrement impossible: ${error.message}`);
       return;
     }
 
@@ -268,9 +279,9 @@ const DisplayNameForm = () => {
           <CardContent className="pt-0 space-y-4">
             {!userId && (
               <div className="rounded-lg border bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200 p-3 text-sm flex items-center justify-between">
-                <span>Aucune session active. Tu peux enregistrer ton pseudo: une session anonyme sera créée automatiquement.</span>
+                <span>Aucune session active. On tentera la session anonyme à l’enregistrement. Sinon, utilisez la page “Login”.</span>
                 <Button type="button" size="sm" className="rounded-full" onClick={triggerAnon}>
-                  Créer une session
+                  Essayer maintenant
                 </Button>
               </div>
             )}
@@ -300,7 +311,6 @@ const DisplayNameForm = () => {
 
               <Button
                 type="submit"
-                // IMPORTANT: on n'empêche plus le submit pendant la vérification
                 disabled={saving || !isValid || available === false}
                 className="h-11 rounded-lg px-4 bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white shadow hover:brightness-105 disabled:opacity-60"
               >
@@ -364,6 +374,7 @@ const DisplayNameForm = () => {
                 <RefreshCcw className="h-4 w-4" />
                 Régénérer
               </Button>
+              <Link to="/login" className="text-xs underline text-blue-600 ml-auto">Ou se connecter</Link>
             </div>
           </CardContent>
         </Card>

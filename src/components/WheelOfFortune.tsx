@@ -11,6 +11,7 @@ import EffectsOverlay from "@/components/EffectsOverlay";
 import { playReadyChime, playWinSound, playSpinTicks } from "@/utils/sfx";
 import { usePrizes } from "@/hooks/use-prizes";
 import { useSession } from "@/components/auth/SessionProvider";
+import { Link } from "react-router-dom";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
@@ -68,25 +69,30 @@ const WheelOfFortune: React.FC = () => {
   }, [imagesReady]);
 
   const ensureAuth = async () => {
-    let s = session;
-    if (!s) {
-      const { data, error } = await supabase.auth.signInAnonymously();
+    if (session) return true;
+    const fn: any = (supabase as any).auth?.signInAnonymously;
+    if (typeof fn !== "function") {
+      showError("Authentification anonyme indisponible. Activez ‘Anonymous’ dans Supabase ou utilisez la page Login.");
+      return false;
+    }
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
       if (error) {
+        showError(`Impossible d'initialiser une session: ${error.message}. Essayez /login.`);
         return false;
       }
-      s = data.session ?? (await supabase.auth.getSession()).data.session ?? null;
+      return true;
+    } catch (e: any) {
+      showError(`Erreur de session: ${e?.message ?? "inconnue"}. Essayez /login.`);
+      return false;
     }
-    return !!s;
   };
 
   const spinWheel = async () => {
     if (spinning || prizes.length === 0) return;
 
     const ok = await ensureAuth();
-    if (!ok) {
-      showError("Impossible d'initialiser une session. Réessayez.");
-      return;
-    }
+    if (!ok) return;
 
     const wheel = wheelRef.current;
     if (!wheel) return;
@@ -106,12 +112,10 @@ const WheelOfFortune: React.FC = () => {
     const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
 
-    // Reset
     wheel.style.transition = "none";
     wheel.style.transform = `rotate(${currentRotationRef.current}deg)`;
     void wheel.offsetHeight;
 
-    // Spin + sons
     requestAnimationFrame(() => {
       wheel.style.transition = `transform ${duration}ms ${easing}`;
       wheel.style.transform = `rotate(${destination}deg)`;
@@ -158,7 +162,6 @@ const WheelOfFortune: React.FC = () => {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="relative w-72 h-72 md:w-96 md:h-96 select-none">
-        {/* Pointe */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
           <div className="w-0 h-0 border-l-[14px] border-r-[14px] border-b-[24px] border-l-transparent border-r-transparent border-b-red-500 drop-shadow-lg"></div>
           <div className="w-3 h-3 bg-red-500 rounded-full mx-auto -mt-1 shadow" />
@@ -170,7 +173,10 @@ const WheelOfFortune: React.FC = () => {
           ref={wheelRef}
           className="relative w-full h-full rounded-full border-8 border-white bg-white overflow-hidden"
           style={{
-            background: conicBackground,
+            background: conic-background
+              ? undefined
+              : undefined,
+            backgroundImage: conicBackground,
             boxShadow:
               "inset 0 0 20px rgba(0,0,0,0.15), 0 20px 40px rgba(0,0,0,0.15)",
             filter: imagesReady ? "none" : "grayscale(0.1) brightness(0.98)",
@@ -227,12 +233,17 @@ const WheelOfFortune: React.FC = () => {
 
       <Button
         onClick={spinWheel}
-        // On ne bloque plus sur "loading"
         disabled={spinning || prizes.length === 0 || !imagesReady}
         className="px-6 py-2 font-semibold shadow-md"
       >
         {spinning ? "En cours..." : "Tourner la roue"}
       </Button>
+
+      {!session && (
+        <div className="text-xs text-gray-600">
+          Si la session échoue, essayez la <Link to="/login" className="underline text-blue-600">connexion</Link>.
+        </div>
+      )}
 
       {winner && (
         <div className="text-center">
