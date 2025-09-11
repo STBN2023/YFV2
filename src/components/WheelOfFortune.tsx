@@ -9,7 +9,7 @@ import { usePreloadImages } from "@/hooks/use-preload-images";
 import { supabase } from "@/integrations/supabase/client";
 import EffectsOverlay from "@/components/EffectsOverlay";
 import { playReadyChime, playWinSound, playSpinTicks } from "@/utils/sfx";
-import { PRIZES } from "@/data/prizes";
+import { usePrizes } from "@/hooks/use-prizes";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
@@ -25,10 +25,12 @@ const WheelOfFortune: React.FC = () => {
   const currentRotationRef = useRef(0);
   const effectTimeoutRef = useRef<number | null>(null);
 
-  const segmentImages = useMemo(() => PRIZES.map((p) => p.image), []);
-  const segments = useMemo(() => PRIZES.map((p) => p.label), []);
-  const pointsPerSegment = useMemo(() => PRIZES.map((p) => p.points), []);
-  const segmentCount = segments.length;
+  const { prizes } = usePrizes();
+
+  const segmentImages = useMemo(() => prizes.map((p) => p.image), [prizes]);
+  const segments = useMemo(() => prizes.map((p) => p.label), [prizes]);
+  const pointsPerSegment = useMemo(() => prizes.map((p) => p.points), [prizes]);
+  const segmentCount = segments.length || 1;
   const segmentAngle = 360 / segmentCount;
 
   const imagesReady = usePreloadImages(segmentImages);
@@ -65,7 +67,7 @@ const WheelOfFortune: React.FC = () => {
   }, [imagesReady]);
 
   const spinWheel = async () => {
-    if (spinning) return;
+    if (spinning || prizes.length === 0) return;
 
     const wheel = wheelRef.current;
     if (!wheel) return;
@@ -79,20 +81,18 @@ const WheelOfFortune: React.FC = () => {
     const finalAngle = targetIndex * segmentAngle + segmentAngle / 2;
     const baseRotations = 6 + Math.random() * 2;
 
-    // Calcul d'une trajectoire exacte vers le centre du segment
     const delta = normalizeAngle(finalAngle - currentRotationRef.current);
     const destination = currentRotationRef.current + baseRotations * 360 + delta;
 
     const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
 
-    // Reset transition propre pour éviter les accoups
+    // Reset transition propre
     wheel.style.transition = "none";
     wheel.style.transform = `rotate(${currentRotationRef.current}deg)`;
-    // Force reflow
     void wheel.offsetHeight;
 
-    // Lancement du spin + son de cliquetis progressif
+    // Spin + son cliquetis progressif
     requestAnimationFrame(() => {
       wheel.style.transition = `transform ${duration}ms ${easing}`;
       wheel.style.transform = `rotate(${destination}deg)`;
@@ -214,7 +214,7 @@ const WheelOfFortune: React.FC = () => {
 
       <Button
         onClick={spinWheel}
-        disabled={spinning}
+        disabled={spinning || prizes.length === 0}
         className="px-6 py-2 font-semibold shadow-md"
       >
         {spinning ? "En cours..." : "Tourner la roue"}

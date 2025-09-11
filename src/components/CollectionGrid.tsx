@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PRIZES } from "@/data/prizes";
 import { useSession } from "@/components/auth/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Lock } from "lucide-react";
+import { usePrizes } from "@/hooks/use-prizes";
 
 type Counts = Record<string, number>;
 
@@ -14,6 +14,7 @@ const CollectionGrid = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const [counts, setCounts] = useState<Counts>({});
+  const { prizes } = usePrizes();
 
   useEffect(() => {
     if (!userId) return;
@@ -32,7 +33,7 @@ const CollectionGrid = () => {
       });
   }, [userId]);
 
-  const items = useMemo(() => PRIZES, []);
+  const items = useMemo(() => prizes, [prizes]);
 
   if (!userId) return null;
 
