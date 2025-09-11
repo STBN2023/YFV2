@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { usePreloadImages } from "@/hooks/use-preload-images";
+import { supabase } from "@/integrations/supabase/client";
 
 const WheelOfFortune: React.FC = () => {
   const [spinning, setSpinning] = useState(false);
@@ -15,7 +16,7 @@ const WheelOfFortune: React.FC = () => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
 
-  // Liste complète des images de prix (détermine le nombre de segments)
+  // Liste des images de prix = nombre de segments
   const segmentImages = useMemo(
     () => [
       "/prizes/prix1.png",
@@ -35,10 +36,14 @@ const WheelOfFortune: React.FC = () => {
     []
   );
 
-  // Précharge les images pour un affichage instantané dans la modale
+  // Points attribués par segment (même longueur que segmentImages)
+  const pointsPerSegment = useMemo(
+    () => [5, 10, 15, 20, 25, 0, 30, 12, 40, 8, 50, 18, 35],
+    []
+  );
+
   const imagesReady = usePreloadImages(segmentImages);
 
-  // Labels alignés sur le nombre de prix
   const segments = useMemo(
     () => segmentImages.map((_, i) => `Prix ${i + 1}`),
     [segmentImages]
@@ -47,7 +52,7 @@ const WheelOfFortune: React.FC = () => {
   const segmentCount = segments.length;
   const segmentAngle = 360 / segmentCount;
 
-  // Couleurs générées dynamiquement pour chaque segment (répartition uniforme du spectre)
+  // Palette dynamique
   const colors = useMemo(
     () =>
       Array.from({ length: segmentCount }, (_, i) => {
@@ -57,7 +62,6 @@ const WheelOfFortune: React.FC = () => {
     [segmentCount]
   );
 
-  // Construit le dégradé conique pour un rendu net et coloré
   const conicBackground = useMemo(() => {
     const stops = segments
       .map((_, i) => {
@@ -70,7 +74,7 @@ const WheelOfFortune: React.FC = () => {
     return `conic-gradient(${stops})`;
   }, [segments, colors, segmentAngle]);
 
-  const spinWheel = () => {
+  const spinWheel = async () => {
     if (spinning) return;
 
     setSpinning(true);
@@ -78,19 +82,13 @@ const WheelOfFortune: React.FC = () => {
     setWinnerIndex(null);
     setOpenResult(false);
 
-    // Choisit aléatoirement un segment à viser
     const targetIndex = Math.floor(Math.random() * segmentCount);
-
-    // Variation autour du centre du segment pour un rendu naturel
     const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4);
-    const baseRotations = 6 + Math.random() * 2; // 6 à 8 tours
+    const baseRotations = 6 + Math.random() * 2;
     const targetAngle = targetIndex * segmentAngle + segmentAngle / 2 + jitter;
+    const destination = currentRotationRef.current + baseRotations * 360 + targetAngle;
 
-    // Destination depuis l’angle courant
-    const destination =
-      currentRotationRef.current + baseRotations * 360 + targetAngle;
-
-    const duration = 4500; // ms
+    const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
 
     if (wheelRef.current) {
@@ -98,15 +96,26 @@ const WheelOfFortune: React.FC = () => {
       wheelRef.current.style.transform = `rotate(${destination}deg)`;
     }
 
-    // À la fin, on fixe le gagnant et normalise l’angle courant
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
       currentRotationRef.current = destination % 360;
       setSpinning(false);
       const selected = segments[targetIndex];
       setWinner(selected);
       setWinnerIndex(targetIndex);
       setOpenResult(true);
-      showSuccess(`Résultat: ${selected}`);
+
+      const gained = pointsPerSegment[targetIndex % pointsPerSegment.length] ?? 0;
+
+      // Ajoute les points et journalise
+      await supabase.rpc("add_points_and_log", {
+        p_label: selected,
+        p_points: gained,
+      });
+
+      // Informe l’UI que les points ont changé
+      window.dispatchEvent(new CustomEvent("points-updated"));
+
+      showSuccess(`Résultat: ${selected} (+${gained} points)`);
     }, duration + 50);
   };
 
