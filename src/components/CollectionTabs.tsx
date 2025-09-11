@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Lock, Sparkles } from "lucide-react";
@@ -8,6 +8,9 @@ import CollectionGrid from "@/components/CollectionGrid";
 import { useSession } from "@/components/auth/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { usePrizes } from "@/hooks/use-prizes";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { showError, showSuccess } from "@/utils/toast";
+import EffectsOverlay from "@/components/EffectsOverlay";
 
 type Counts = Record<string, number>;
 
@@ -16,6 +19,9 @@ const CollectionTabs = () => {
   const userId = session?.user?.id;
   const { prizes } = usePrizes();
   const [counts, setCounts] = useState<Counts>({});
+  const [tab, setTab] = useState<"v1" | "v2">("v1");
+  const [effect, setEffect] = useState<"confetti" | null>(null);
+  const prevCompleteRef = useRef<boolean>(false);
 
   const fetchCounts = () => {
     if (!userId) {
@@ -54,66 +60,103 @@ const CollectionTabs = () => {
   );
   const v1Complete = totalV1 > 0 && discoveredV1 >= totalV1;
 
-  // Liste placeholders V2: même nombre de cartes que V1
+  // Celebrate when V1 becomes complete (transition false -> true)
+  useEffect(() => {
+    if (!prevCompleteRef.current && v1Complete) {
+      setEffect("confetti");
+      showSuccess("Collection V1 complétée ! V2 débloquée 🎉");
+      const t = window.setTimeout(() => setEffect(null), 2800);
+      return () => window.clearTimeout(t);
+    }
+    prevCompleteRef.current = v1Complete;
+  }, [v1Complete]);
+
+  // V2 placeholders: same count as V1
   const v2Placeholders = useMemo(() => Array.from({ length: totalV1 }), [totalV1]);
 
+  const onChangeTab = (value: string) => {
+    const next = (value as "v1" | "v2");
+    if (next === "v2" && !v1Complete) {
+      showError("Terminez la collection V1 pour débloquer la V2.");
+      return;
+    }
+    setTab(next);
+  };
+
   return (
-    <Tabs defaultValue="v1" className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <TabsList className="grid grid-cols-2 w-full sm:w-auto">
-          <TabsTrigger value="v1" className="px-6">V1</TabsTrigger>
-          <TabsTrigger value="v2" className="px-6 relative">
-            <span className="flex items-center gap-2">
-              V2
+    <div className="relative">
+      {effect && <EffectsOverlay type="confetti" />}
+
+      <Tabs value={tab} onValueChange={onChangeTab} className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+            <TabsTrigger value="v1" className="px-6">V1</TabsTrigger>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger
+                  value="v2"
+                  className="px-6 relative data-[state=inactive]:opacity-100"
+                >
+                  <span className="flex items-center gap-2">
+                    V2
+                    {!v1Complete && (
+                      <Lock className="w-4 h-4 text-gray-500" aria-hidden />
+                    )}
+                  </span>
+                </TabsTrigger>
+              </TooltipTrigger>
               {!v1Complete && (
-                <Lock className="w-4 h-4 text-gray-500" aria-hidden />
+                <TooltipContent side="top" align="center">
+                  Terminez la collection V1 pour accéder à la V2.
+                </TooltipContent>
               )}
-            </span>
-          </TabsTrigger>
-        </TabsList>
+            </Tooltip>
+          </TabsList>
 
-        <div className="text-xs text-gray-600 hidden sm:block">
-          {discoveredV1}/{totalV1} cartes V1 découvertes
-        </div>
-      </div>
-
-      <TabsContent value="v1" className="mt-0">
-        <CollectionGrid />
-      </TabsContent>
-
-      <TabsContent value="v2" className="mt-0">
-        {!v1Complete && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-100 p-3 text-sm flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            <span>Terminez la collection V1 pour débloquer la V2.</span>
+          <div className="text-xs text-gray-600">
+            {discoveredV1}/{totalV1} cartes V1 découvertes
           </div>
-        )}
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {v2Placeholders.map((_, i) => (
-            <Card key={i} className="overflow-hidden relative">
-              <CardContent className="p-2">
-                <div className="relative aspect-square rounded-md overflow-hidden">
-                  <div className={`w-full h-full flex items-center justify-center ${v1Complete ? "bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700" : "bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700"}`}>
-                    <div className="flex flex-col items-center text-gray-600 dark:text-gray-300">
-                      {v1Complete ? (
-                        <Sparkles className="w-6 h-6 mb-1" />
-                      ) : (
-                        <Lock className="w-6 h-6 mb-1" />
-                      )}
-                      <span className="text-sm">{v1Complete ? "Bientôt" : "Verrouillé"}</span>
+        <TabsContent value="v1" className="mt-0">
+          <CollectionGrid />
+        </TabsContent>
+
+        <TabsContent value="v2" className="mt-0">
+          {!v1Complete && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-100 p-3 text-sm flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+              <span>Terminez la collection V1 pour débloquer la V2.</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {v2Placeholders.map((_, i) => (
+              <Card key={i} className="overflow-hidden relative">
+                <CardContent className="p-2">
+                  <div className="relative aspect-square rounded-md overflow-hidden">
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 flex items-center justify-center">
+                      <div className="flex flex-col items-center text-gray-600 dark:text-gray-300">
+                        {v1Complete ? (
+                          <Sparkles className="w-6 h-6 mb-1" />
+                        ) : (
+                          <Lock className="w-6 h-6 mb-1" />
+                        )}
+                        <span className="text-sm">{v1Complete ? "Bientôt" : "Verrouillé"}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-2 text-sm font-medium text-center">
-                  {v1Complete ? "V2 — bientôt disponible" : "???"}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </TabsContent>
-    </Tabs>
+                  <div className="mt-2 text-sm font-medium text-center">
+                    {v1Complete ? "V2 — bientôt disponible" : "???"}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
