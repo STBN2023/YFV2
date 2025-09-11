@@ -24,6 +24,7 @@ const WheelOfFortune: React.FC = () => {
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
   const [openResult, setOpenResult] = useState(false);
   const [effect, setEffect] = useState<EffectType | null>(null);
+  const [winMessage, setWinMessage] = useState<string>("");
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
   const effectTimeoutRef = useRef<number | null>(null);
@@ -101,6 +102,7 @@ const WheelOfFortune: React.FC = () => {
     setWinner(null);
     setWinnerIndex(null);
     setOpenResult(false);
+    setWinMessage("");
 
     const targetIndex = Math.floor(Math.random() * segmentCount);
     const finalAngle = targetIndex * segmentAngle + segmentAngle / 2;
@@ -131,7 +133,6 @@ const WheelOfFortune: React.FC = () => {
       const selected = segments[targetIndex];
       setWinner(selected);
       setWinnerIndex(targetIndex);
-      setOpenResult(true);
 
       const gained = pointsPerSegment[targetIndex] ?? 0;
 
@@ -139,6 +140,20 @@ const WheelOfFortune: React.FC = () => {
         p_label: selected,
         p_points: gained,
       });
+
+      // Message fun et dynamique
+      const options = [
+        `Bravo ! Tu as gagné cette magnifique carte: "${selected}" ✨`,
+        `Bim ! "${selected}" rejoint ta collection, +${gained} points 🎉`,
+        `Coup de bol cosmique: "${selected}" est à toi 🚀`,
+        `Le destin a tourné en ta faveur: "${selected}" ! 🪄`,
+        `Boum ! Carte "${selected}" capturée, +${gained} pts 💥`,
+        `Oui chef ! "${selected}" au menu du jour 🍀`,
+      ];
+      const pick = options[Math.floor(Math.random() * options.length)];
+      setWinMessage(pick);
+
+      setOpenResult(true);
 
       playWinSound();
       const pool: EffectType[] = ["confetti", "smoke", "burst"];
@@ -254,7 +269,9 @@ const WheelOfFortune: React.FC = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Résultat</DialogTitle>
-            <DialogDescription>Voici votre lot/visuel associé au segment.</DialogDescription>
+            <DialogDescription>
+              {winMessage || "Bravo ! Tu as gagné cette magnifique carte ✨"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {winnerImg && (
