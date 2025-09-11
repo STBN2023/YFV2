@@ -1,20 +1,26 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess } from "@/utils/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { usePreloadImages } from "@/hooks/use-preload-images";
 import { supabase } from "@/integrations/supabase/client";
+import EffectsOverlay from "@/components/EffectsOverlay";
+import { playSpinSound, playReadyChime, playWinSound } from "@/utils/sfx";
+
+type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
 const WheelOfFortune: React.FC = () => {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
   const [openResult, setOpenResult] = useState(false);
+  const [effect, setEffect] = useState<EffectType | null>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
+  const effectTimeoutRef = useRef<number | null>(null);
 
   // Liste des images de prix = nombre de segments
   const segmentImages = useMemo(
@@ -74,6 +80,16 @@ const WheelOfFortune: React.FC = () => {
     return `conic-gradient(${stops})`;
   }, [segments, colors, segmentAngle]);
 
+  useEffect(() => {
+    if (imagesReady) {
+      playReadyChime();
+      setEffect("sparkles");
+      if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
+      effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 1500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imagesReady]);
+
   const spinWheel = async () => {
     if (spinning) return;
 
@@ -90,6 +106,9 @@ const WheelOfFortune: React.FC = () => {
 
     const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
+
+    // Son de spin
+    playSpinSound(duration);
 
     if (wheelRef.current) {
       wheelRef.current.style.transition = `transform ${duration}ms ${easing}`;
@@ -111,6 +130,14 @@ const WheelOfFortune: React.FC = () => {
         p_label: selected,
         p_points: gained,
       });
+
+      // Son de victoire + effet aléatoire
+      playWinSound();
+      const pool: EffectType[] = ["confetti", "smoke", "burst"];
+      const randomEffect = pool[Math.floor(Math.random() * pool.length)];
+      setEffect(randomEffect);
+      if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
+      effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 2800);
 
       // Informe l’UI que les points ont changé
       window.dispatchEvent(new CustomEvent("points-updated"));
@@ -212,6 +239,9 @@ const WheelOfFortune: React.FC = () => {
           <Badge className="text-base py-2 px-3">🎉 Résultat: {winner}</Badge>
         </div>
       )}
+
+      {/* Effets visuels */}
+      {effect && <EffectsOverlay type={effect} />}
 
       {/* Modale résultat avec l’image */}
       <Dialog open={openResult} onOpenChange={setOpenResult}>

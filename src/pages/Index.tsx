@@ -1,3 +1,4 @@
+import GlowingTitle from "@/components/GlowingTitle";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import WheelOfFortune from "@/components/WheelOfFortune";
 import AuthStatus from "@/components/AuthStatus";
@@ -8,9 +9,9 @@ import DisplayNameForm from "@/components/DisplayNameForm";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 gap-6">
-      <div className="w-full max-w-3xl flex items-center justify-between">
-        <h1 className="text-3xl md:text-4xl font-bold">Roue de la Fortune</h1>
+    <div className="min-h-screen flex flex-col items-center bg-gray-100 p-4 gap-6">
+      <div className="w-full max-w-3xl flex flex-col items-center gap-2 mt-2">
+        <GlowingTitle />
         <AuthStatus />
       </div>
 
