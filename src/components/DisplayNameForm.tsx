@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess } from "@/utils/toast";
-import { CheckCircle2, XCircle, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Sparkles, RefreshCcw, X } from "lucide-react";
 
 const NAME_REGEX = /^[a-zA-Z0-9_.-]{3,20}$/;
 
@@ -37,6 +38,7 @@ const DisplayNameForm = () => {
   const [name, setName] = useState("");
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Availability check
   const [checking, setChecking] = useState(false);
@@ -46,13 +48,17 @@ const DisplayNameForm = () => {
   const isValid = useMemo(() => NAME_REGEX.test(name.trim()), [name]);
   const chars = name.trim().length;
 
+  // Suggestions pool
+  const [seed, setSeed] = useState(0);
+  const suggestions = useMemo(() => [makeSuggestion(), makeSuggestion(), makeSuggestion()], [seed]);
+
   useEffect(() => {
     if (!userId) return;
     supabase
       .from("profiles")
       .select("first_name")
       .eq("id", userId)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
         if (error) throw error;
         setName(data?.first_name ?? "");
@@ -69,10 +75,11 @@ const DisplayNameForm = () => {
     }
     let cancelled = false;
     setChecking(true);
+    // case-insensitive exact match using ilike (no % => exact)
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .eq("first_name", debouncedName)
+      .ilike("first_name", debouncedName)
       .neq("id", userId)
       .then(({ count, error }) => {
         if (cancelled) return;
@@ -85,7 +92,31 @@ const DisplayNameForm = () => {
     };
   }, [debouncedName, isValid, userId]);
 
-  if (!userId || !initialLoaded) return null;
+  if (!userId || !initialLoaded) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            Choisis ton pseudo gamer
+          </CardTitle>
+          <CardDescription>Chargement du formulaire…</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,25 +125,23 @@ const DisplayNameForm = () => {
     if (available === false) return;
 
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ first_name: value }).eq("id", userId);
+    const { error } = await supabase.from("profiles").upsert({ id: userId, first_name: value }, { onConflict: "id" });
     if (error) throw error;
     setSaving(false);
+    setSaved(true);
     showSuccess("Pseudo enregistré !");
-  };
-
-  const fillSuggestion = () => {
-    setName(makeSuggestion());
+    setTimeout(() => setSaved(false), 1500);
   };
 
   const statusIcon = (() => {
+    if (saving || checking) {
+      return <Loader2 className="h-5 w-5 animate-spin text-gray-500" aria-hidden />;
+    }
     if (!name.trim()) return null;
     if (!isValid) {
       return <XCircle className="h-5 w-5 text-red-500" aria-hidden />;
     }
-    if (checking) {
-      return <Loader2 className="h-5 w-5 animate-spin text-gray-500" aria-hidden />;
-    }
-    if (available === true) {
+    if (available === true || saved) {
       return <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden />;
     }
     if (available === false) {
@@ -140,6 +169,17 @@ const DisplayNameForm = () => {
     return "3–20 caractères. Lettres, chiffres, _ . -";
   })();
 
+  const validityClasses =
+    !name.trim()
+      ? ""
+      : !isValid
+        ? "border-red-400 focus-visible:ring-red-500"
+        : available === false
+          ? "border-red-400 focus-visible:ring-red-500"
+          : available === true || saved
+            ? "border-emerald-500 focus-visible:ring-emerald-600"
+            : "";
+
   return (
     <form onSubmit={onSubmit} className="w-full max-w-3xl mx-auto">
       <Card className="overflow-hidden">
@@ -159,49 +199,22 @@ const DisplayNameForm = () => {
               <span className={`text-xs ${chars > 20 ? "text-red-600" : "text-gray-500"}`}>{chars}/20</span>
             </div>
 
-            <div className="relative">
-              <Input
-                id="gamer-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: LuckyMax, MysticSpin42..."
-                className="pr-10"
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={24}
-              />
-              <div className="absolute inset-y-0 right-2 flex items-center">
-                {statusIcon}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="gamer-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex: LuckyMax, MysticSpin42..."
+                  className={`pr-10 ${validityClasses}`}
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={24}
+                />
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  {statusIcon}
+                </div>
               </div>
-            </div>
-
-            <p className={`text-xs ${(!isValid || available === false) ? "text-red-600" : "text-gray-500"}`}>
-              {helperText}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="secondary" size="sm" onClick={fillSuggestion}>
-                Suggérer un pseudo
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setName(makeSuggestion())}
-              >
-                {makeSuggestion()}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setName(makeSuggestion())}
-              >
-                {makeSuggestion()}
-              </Button>
-            </div>
-
-            <div className="flex justify-end">
               <Button
                 type="submit"
                 disabled={saving || !isValid || checking || available === false}
@@ -214,6 +227,53 @@ const DisplayNameForm = () => {
                 ) : (
                   "Enregistrer"
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Effacer"
+                onClick={() => setName("")}
+                disabled={saving}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <p className={`text-xs ${(!isValid || available === false) ? "text-red-600" : "text-gray-500"}`}>
+              {helperText}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setName(makeSuggestion())}
+              >
+                Suggérer un pseudo
+              </Button>
+              {suggestions.map((s, i) => (
+                <Button
+                  key={i}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setName(s)}
+                >
+                  {s}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSeed((n) => n + 1)}
+                className="inline-flex items-center gap-1"
+                aria-label="Régénérer des suggestions"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Régénérer
               </Button>
             </div>
           </div>
