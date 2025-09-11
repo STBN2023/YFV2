@@ -8,7 +8,7 @@ export type Prize = {
 export const PRIZES: Prize[] = [
   { id: "prix1", label: "YOURI BIG EYES", image: "/prizes/prix1.png", points: 5 },
   { id: "prix2", label: "OLD YOURI BIKER STYLE", image: "/prizes/prix2.png", points: 10 },
-  { id: "prix3", label: "Prix 3", image: "/prizes/prix3.png", points: 15 },
+  { id: "prix3", label: YOURI CLASSICS", image: "/prizes/prix3.png", points: 15 },
   { id: "prix4", label: "Prix 4", image: "/prizes/prix4.png", points: 20 },
   { id: "prix5", label: "Prix 5", image: "/prizes/prix5.png", points: 25 },
   { id: "prix6", label: "Prix 6", image: "/prizes/prix6.png", points: 0 },
