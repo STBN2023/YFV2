@@ -173,9 +173,6 @@ const WheelOfFortune: React.FC = () => {
           ref={wheelRef}
           className="relative w-full h-full rounded-full border-8 border-white bg-white overflow-hidden"
           style={{
-            background: conic-background
-              ? undefined
-              : undefined,
             backgroundImage: conicBackground,
             boxShadow:
               "inset 0 0 20px rgba(0,0,0,0.15), 0 20px 40px rgba(0,0,0,0.15)",
