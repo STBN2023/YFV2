@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess } from "@/utils/toast";
-import { CheckCircle2, XCircle, Loader2, Sparkles, RefreshCcw, X } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Sparkles, RefreshCcw, X, AtSign } from "lucide-react";
 
 const NAME_REGEX = /^[a-zA-Z0-9_.-]{3,20}$/;
 
@@ -94,27 +94,31 @@ const DisplayNameForm = () => {
 
   if (!userId || !initialLoaded) {
     return (
-      <Card className="w-full max-w-3xl mx-auto">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            Choisis ton pseudo gamer
-          </CardTitle>
-          <CardDescription>Chargement du formulaire…</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-12" />
-          </div>
-          <Skeleton className="h-10 w-full" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-8 w-20" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="relative w-full max-w-3xl mx-auto rounded-2xl p-[1px] bg-gradient-to-r from-fuchsia-500/50 via-amber-400/50 to-emerald-400/50 shadow-lg">
+        <Card className="rounded-2xl bg-white/80 dark:bg-neutral-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border border-white/40 dark:border-white/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              <span className="bg-gradient-to-r from-fuchsia-500 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
+                Choisis ton pseudo gamer
+              </span>
+            </CardTitle>
+            <CardDescription>Chargement du formulaire…</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <Skeleton className="h-11 w-full rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-28 rounded-full" />
+              <Skeleton className="h-8 w-24 rounded-full" />
+              <Skeleton className="h-8 w-20 rounded-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -139,13 +143,13 @@ const DisplayNameForm = () => {
     }
     if (!name.trim()) return null;
     if (!isValid) {
-      return <XCircle className="h-5 w-5 text-red-500" aria-hidden />;
+      return <XCircle className="h-5 w-5 text-red-500 drop-shadow-sm" aria-hidden />;
     }
     if (available === true || saved) {
-      return <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden />;
+      return <CheckCircle2 className="h-5 w-5 text-emerald-600 drop-shadow-sm" aria-hidden />;
     }
     if (available === false) {
-      return <XCircle className="h-5 w-5 text-red-500" aria-hidden />;
+      return <XCircle className="h-5 w-5 text-red-500 drop-shadow-sm" aria-hidden />;
     }
     return null;
   })();
@@ -181,32 +185,36 @@ const DisplayNameForm = () => {
             : "";
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-3xl mx-auto">
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            Choisis ton pseudo gamer
-          </CardTitle>
-          <CardDescription>
-            Il sera affiché dans le classement et sur ta collection. Tu peux le modifier à tout moment.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-3">
+    <form onSubmit={onSubmit} className="w-full">
+      <div className="relative w-full max-w-3xl mx-auto rounded-2xl p-[1px] bg-gradient-to-r from-fuchsia-500/60 via-amber-400/60 to-emerald-400/60 shadow-xl">
+        <Card className="rounded-2xl bg-white/85 dark:bg-neutral-900/85 backdrop-blur supports-[backdrop-filter]:bg-white/60 border border-white/40 dark:border-white/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 leading-tight">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              <span className="bg-gradient-to-r from-fuchsia-500 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
+                Choisis ton pseudo gamer
+              </span>
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Visible dans le classement et sur ta collection. Tu peux le modifier à tout moment.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="pt-0 space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="gamer-name" className="text-sm">Pseudo</Label>
+              <Label htmlFor="gamer-name" className="text-sm font-medium">Pseudo</Label>
               <span className={`text-xs ${chars > 20 ? "text-red-600" : "text-gray-500"}`}>{chars}/20</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="relative flex-1">
+              <div className="relative flex-1 group">
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                 <Input
                   id="gamer-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: LuckyMax, MysticSpin42..."
-                  className={`pr-10 ${validityClasses}`}
+                  className={`pl-9 pr-10 h-11 rounded-lg transition-all ${validityClasses}`}
                   autoComplete="off"
                   spellCheck={false}
                   maxLength={24}
@@ -215,9 +223,11 @@ const DisplayNameForm = () => {
                   {statusIcon}
                 </div>
               </div>
+
               <Button
                 type="submit"
                 disabled={saving || !isValid || checking || available === false}
+                className="h-11 rounded-lg px-4 bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white shadow hover:brightness-105 disabled:opacity-60"
               >
                 {saving ? (
                   <span className="inline-flex items-center gap-2">
@@ -228,6 +238,7 @@ const DisplayNameForm = () => {
                   "Enregistrer"
                 )}
               </Button>
+
               <Button
                 type="button"
                 variant="ghost"
@@ -235,6 +246,7 @@ const DisplayNameForm = () => {
                 aria-label="Effacer"
                 onClick={() => setName("")}
                 disabled={saving}
+                className="h-11 w-11 rounded-lg"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -250,6 +262,7 @@ const DisplayNameForm = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => setName(makeSuggestion())}
+                className="rounded-full"
               >
                 Suggérer un pseudo
               </Button>
@@ -260,6 +273,7 @@ const DisplayNameForm = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setName(s)}
+                  className="rounded-full"
                 >
                   {s}
                 </Button>
@@ -269,16 +283,16 @@ const DisplayNameForm = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSeed((n) => n + 1)}
-                className="inline-flex items-center gap-1"
+                className="inline-flex items-center gap-1 rounded-full"
                 aria-label="Régénérer des suggestions"
               >
                 <RefreshCcw className="h-4 w-4" />
                 Régénérer
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </form>
   );
 };
