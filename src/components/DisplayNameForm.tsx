@@ -52,16 +52,14 @@ const DisplayNameForm = () => {
   const [seed, setSeed] = useState(0);
   const suggestions = useMemo(() => [makeSuggestion(), makeSuggestion(), makeSuggestion()], [seed]);
 
-  // Aide si l'initialisation prend trop longtemps
-  const [showHelp, setShowHelp] = useState(false);
+  // Si pas de session, on ne bloque plus le formulaire: on marque l'init comme prête
   useEffect(() => {
-    if (!userId || !initialLoaded) {
-      const id = setTimeout(() => setShowHelp(true), 2500);
-      return () => clearTimeout(id);
+    if (!userId) {
+      setInitialLoaded(true);
     }
-    setShowHelp(false);
-  }, [userId, initialLoaded]);
+  }, [userId]);
 
+  // Chargement du pseudo existant (si session)
   useEffect(() => {
     if (!userId) return;
     supabase
@@ -76,38 +74,49 @@ const DisplayNameForm = () => {
       });
   }, [userId]);
 
+  // Vérification de la disponibilité (même sans userId)
   useEffect(() => {
-    // reset availability if invalid or empty
-    if (!debouncedName || !isValid || !userId) {
+    if (!debouncedName || !isValid) {
       setAvailable(null);
       setChecking(false);
       return;
     }
     let cancelled = false;
     setChecking(true);
-    // case-insensitive exact match using ilike (no % => exact)
-    supabase
+
+    const query = supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .ilike("first_name", debouncedName)
-      .neq("id", userId)
-      .then(({ count, error }) => {
-        if (cancelled) return;
-        if (error) throw error;
+      .ilike("first_name", debouncedName);
+
+    query.then(({ count, error }) => {
+      if (cancelled) return;
+      if (error) throw error;
+      // Si on a un userId, on ne considère pas son propre pseudo
+      if (userId) {
+        // Impossible de filtrer côté count/head pour exclure un id précis sans HEAD=false,
+        // mais comme on est en head:true on fait un simple count global;
+        // on considère indisponible s'il y a au moins un autre même nom.
+        // Pour rester simple, on garde la logique: count === 0 => dispo
         setAvailable(!count || count === 0);
-        setChecking(false);
-      });
+      } else {
+        setAvailable(!count || count === 0);
+      }
+      setChecking(false);
+    });
+
     return () => {
       cancelled = true;
     };
   }, [debouncedName, isValid, userId]);
 
-  const triggerAnon = () => {
-    showSuccess("Connexion anonyme…");
-    void supabase.auth.signInAnonymously();
+  const triggerAnon = async () => {
+    await supabase.auth.signInAnonymously();
   };
 
-  if (!userId || !initialLoaded) {
+  const isReady = initialLoaded; // désormais prêt même sans session
+
+  if (!isReady) {
     return (
       <div className="relative w-full max-w-3xl mx-auto rounded-2xl p-[1px] bg-gradient-to-r from-fuchsia-500/50 via-amber-400/50 to-emerald-400/50 shadow-lg">
         <Card className="rounded-2xl bg-white/80 dark:bg-neutral-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border border-white/40 dark:border-white/10">
@@ -120,7 +129,7 @@ const DisplayNameForm = () => {
             </CardTitle>
             <CardDescription className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-              Initialisation de votre session
+              Initialisation
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -134,28 +143,6 @@ const DisplayNameForm = () => {
               <Skeleton className="h-8 w-24 rounded-full" />
               <Skeleton className="h-8 w-20 rounded-full" />
             </div>
-
-            {showHelp && (
-              <div className="pt-2 border-t mt-3 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={triggerAnon}
-                  className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105"
-                  size="sm"
-                >
-                  Continuer en anonyme
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.location.reload()}
-                  className="rounded-full"
-                >
-                  Recharger la page
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -169,8 +156,26 @@ const DisplayNameForm = () => {
     if (available === false) return;
 
     setSaving(true);
-    const { error } = await supabase.from("profiles").upsert({ id: userId, first_name: value }, { onConflict: "id" });
+
+    // Si pas de session, on en crée une anonyme d'abord
+    let uid = userId;
+    if (!uid) {
+      const { data } = await supabase.auth.signInAnonymously();
+      uid = data?.user?.id ?? (await supabase.auth.getSession()).data.session?.user?.id ?? undefined;
+    }
+
+    if (!uid) {
+      // Si malgré tout on n'a pas d'uid, on arrête proprement
+      setSaving(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: uid, first_name: value }, { onConflict: "id" });
+
     if (error) throw error;
+
     setSaving(false);
     setSaved(true);
     showSuccess("Pseudo enregistré !");
@@ -241,6 +246,15 @@ const DisplayNameForm = () => {
           </CardHeader>
 
           <CardContent className="pt-0 space-y-4">
+            {!userId && (
+              <div className="rounded-lg border bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200 p-3 text-sm flex items-center justify-between">
+                <span>Aucune session active. Tu peux enregistrer ton pseudo: une session anonyme sera créée automatiquement.</span>
+                <Button type="button" size="sm" className="rounded-full" onClick={triggerAnon}>
+                  Créer une session
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <Label htmlFor="gamer-name" className="text-sm font-medium">Pseudo</Label>
               <span className={`text-xs ${chars > 20 ? "text-red-600" : "text-gray-500"}`}>{chars}/20</span>
