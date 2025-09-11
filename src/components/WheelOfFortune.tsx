@@ -17,7 +17,7 @@ type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 const normalizeAngle = (deg: number) => ((deg % 360) + 360) % 360;
 
 const WheelOfFortune: React.FC = () => {
-  const { session, loading } = useSession();
+  const { session } = useSession();
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
@@ -71,7 +71,9 @@ const WheelOfFortune: React.FC = () => {
     let s = session;
     if (!s) {
       const { data, error } = await supabase.auth.signInAnonymously();
-      if (error) return false;
+      if (error) {
+        return false;
+      }
       s = data.session ?? (await supabase.auth.getSession()).data.session ?? null;
     }
     return !!s;
@@ -104,10 +106,12 @@ const WheelOfFortune: React.FC = () => {
     const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
 
+    // Reset
     wheel.style.transition = "none";
     wheel.style.transform = `rotate(${currentRotationRef.current}deg)`;
     void wheel.offsetHeight;
 
+    // Spin + sons
     requestAnimationFrame(() => {
       wheel.style.transition = `transform ${duration}ms ${easing}`;
       wheel.style.transform = `rotate(${destination}deg)`;
@@ -140,7 +144,7 @@ const WheelOfFortune: React.FC = () => {
       effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 2800);
 
       window.dispatchEvent(new CustomEvent("points-updated"));
-      showSuccess(`Pseudo confirmé. Bonne partie ! Résultat: ${selected} (+${gained} points)`);
+      showSuccess(`Résultat: ${selected} (+${gained} points)`);
     };
 
     wheel.addEventListener("transitionend", onEnd, { once: true });
@@ -154,6 +158,7 @@ const WheelOfFortune: React.FC = () => {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="relative w-72 h-72 md:w-96 md:h-96 select-none">
+        {/* Pointe */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
           <div className="w-0 h-0 border-l-[14px] border-r-[14px] border-b-[24px] border-l-transparent border-r-transparent border-b-red-500 drop-shadow-lg"></div>
           <div className="w-3 h-3 bg-red-500 rounded-full mx-auto -mt-1 shadow" />
@@ -222,7 +227,8 @@ const WheelOfFortune: React.FC = () => {
 
       <Button
         onClick={spinWheel}
-        disabled={spinning || prizes.length === 0 || !imagesReady || loading}
+        // On ne bloque plus sur "loading"
+        disabled={spinning || prizes.length === 0 || !imagesReady}
         className="px-6 py-2 font-semibold shadow-md"
       >
         {spinning ? "En cours..." : "Tourner la roue"}

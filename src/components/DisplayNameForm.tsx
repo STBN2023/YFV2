@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { CheckCircle2, XCircle, Loader2, Sparkles, RefreshCcw, X, AtSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -42,7 +42,6 @@ const DisplayNameForm = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Availability check
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const debouncedName = useDebounced(name.trim());
@@ -50,18 +49,17 @@ const DisplayNameForm = () => {
   const isValid = useMemo(() => NAME_REGEX.test(name.trim()), [name]);
   const chars = name.trim().length;
 
-  // Suggestions pool
   const [seed, setSeed] = useState(0);
   const suggestions = useMemo(() => [makeSuggestion(), makeSuggestion(), makeSuggestion()], [seed]);
 
-  // Si pas de session, on ne bloque plus le formulaire: on marque l'init comme prête
+  // On ne bloque pas l'UI sans session
   useEffect(() => {
     if (!userId) {
       setInitialLoaded(true);
     }
   }, [userId]);
 
-  // Chargement du pseudo existant (si session)
+  // Charger pseudo existant si session
   useEffect(() => {
     if (!userId) return;
     supabase
@@ -70,13 +68,13 @@ const DisplayNameForm = () => {
       .eq("id", userId)
       .maybeSingle()
       .then(({ data, error }) => {
-        if (error) throw error;
+        if (error) return; // laisser l'UI fonctionner quand même
         setName(data?.first_name ?? "");
         setInitialLoaded(true);
       });
   }, [userId]);
 
-  // Vérification de la disponibilité: si pas de session encore, ne bloque pas (on assume disponible)
+  // Vérification disponibilité — non bloquante sans session
   useEffect(() => {
     if (!debouncedName || !isValid) {
       setAvailable(null);
@@ -104,7 +102,6 @@ const DisplayNameForm = () => {
       if (cancelled) return;
 
       if (error) {
-        // En cas d'erreur (RLS, réseau…), ne pas bloquer l'enregistrement
         setAvailable(true);
         setChecking(false);
         return;
@@ -115,14 +112,16 @@ const DisplayNameForm = () => {
     };
 
     run();
-
     return () => {
       cancelled = true;
     };
   }, [debouncedName, isValid]);
 
   const triggerAnon = async () => {
-    await supabase.auth.signInAnonymously();
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      showError("Impossible de créer une session. Réessayez.");
+    }
   };
 
   const isReady = initialLoaded;
@@ -168,15 +167,21 @@ const DisplayNameForm = () => {
 
     setSaving(true);
 
-    // Si pas de session, on en crée une anonyme d'abord
+    // S'assurer d'avoir une session anonyme si nécessaire
     let uid = userId;
     if (!uid) {
-      const { data } = await supabase.auth.signInAnonymously();
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        setSaving(false);
+        showError("Impossible de créer une session. Réessayez.");
+        return;
+      }
       uid = data?.user?.id ?? (await supabase.auth.getSession()).data.session?.user?.id ?? undefined;
     }
 
     if (!uid) {
       setSaving(false);
+      showError("Session introuvable. Réessayez.");
       return;
     }
 
@@ -184,7 +189,11 @@ const DisplayNameForm = () => {
       .from("profiles")
       .upsert({ id: uid, first_name: value }, { onConflict: "id" });
 
-    if (error) throw error;
+    if (error) {
+      setSaving(false);
+      showError("Enregistrement impossible pour le moment.");
+      return;
+    }
 
     setSaving(false);
     setSaved(true);
@@ -291,7 +300,8 @@ const DisplayNameForm = () => {
 
               <Button
                 type="submit"
-                disabled={saving || !isValid || checking || available === false}
+                // IMPORTANT: on n'empêche plus le submit pendant la vérification
+                disabled={saving || !isValid || available === false}
                 className="h-11 rounded-lg px-4 bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white shadow hover:brightness-105 disabled:opacity-60"
               >
                 {saving ? (
