@@ -8,9 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { usePreloadImages } from "@/hooks/use-preload-images";
 import { supabase } from "@/integrations/supabase/client";
 import EffectsOverlay from "@/components/EffectsOverlay";
-import { playSpinSound, playReadyChime, playWinSound } from "@/utils/sfx";
+import { playReadyChime, playWinSound, playSpinTicks } from "@/utils/sfx";
+import { PRIZES } from "@/data/prizes";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
+
+const normalizeAngle = (deg: number) => ((deg % 360) + 360) % 360;
 
 const WheelOfFortune: React.FC = () => {
   const [spinning, setSpinning] = useState(false);
@@ -22,43 +25,14 @@ const WheelOfFortune: React.FC = () => {
   const currentRotationRef = useRef(0);
   const effectTimeoutRef = useRef<number | null>(null);
 
-  // Liste des images de prix = nombre de segments
-  const segmentImages = useMemo(
-    () => [
-      "/prizes/prix1.png",
-      "/prizes/prix2.png",
-      "/prizes/prix3.png",
-      "/prizes/prix4.png",
-      "/prizes/prix5.png",
-      "/prizes/prix6.png",
-      "/prizes/prix7.png",
-      "/prizes/prix8.png",
-      "/prizes/prix9.png",
-      "/prizes/prix10.png",
-      "/prizes/prix11.png",
-      "/prizes/prix12.png",
-      "/prizes/prix13.png",
-    ],
-    []
-  );
-
-  // Points attribués par segment (même longueur que segmentImages)
-  const pointsPerSegment = useMemo(
-    () => [5, 10, 15, 20, 25, 0, 30, 12, 40, 8, 50, 18, 35],
-    []
-  );
-
-  const imagesReady = usePreloadImages(segmentImages);
-
-  const segments = useMemo(
-    () => segmentImages.map((_, i) => `Prix ${i + 1}`),
-    [segmentImages]
-  );
-
+  const segmentImages = useMemo(() => PRIZES.map((p) => p.image), []);
+  const segments = useMemo(() => PRIZES.map((p) => p.label), []);
+  const pointsPerSegment = useMemo(() => PRIZES.map((p) => p.points), []);
   const segmentCount = segments.length;
   const segmentAngle = 360 / segmentCount;
 
-  // Palette dynamique
+  const imagesReady = usePreloadImages(segmentImages);
+
   const colors = useMemo(
     () =>
       Array.from({ length: segmentCount }, (_, i) => {
@@ -93,45 +67,56 @@ const WheelOfFortune: React.FC = () => {
   const spinWheel = async () => {
     if (spinning) return;
 
+    const wheel = wheelRef.current;
+    if (!wheel) return;
+
     setSpinning(true);
     setWinner(null);
     setWinnerIndex(null);
     setOpenResult(false);
 
     const targetIndex = Math.floor(Math.random() * segmentCount);
-    const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4);
+    const finalAngle = targetIndex * segmentAngle + segmentAngle / 2;
     const baseRotations = 6 + Math.random() * 2;
-    const targetAngle = targetIndex * segmentAngle + segmentAngle / 2 + jitter;
-    const destination = currentRotationRef.current + baseRotations * 360 + targetAngle;
+
+    // Calcul d'une trajectoire exacte vers le centre du segment
+    const delta = normalizeAngle(finalAngle - currentRotationRef.current);
+    const destination = currentRotationRef.current + baseRotations * 360 + delta;
 
     const duration = 4500;
     const easing = "cubic-bezier(0.17, 0.67, 0.21, 0.99)";
 
-    // Son de spin
-    playSpinSound(duration);
+    // Reset transition propre pour éviter les accoups
+    wheel.style.transition = "none";
+    wheel.style.transform = `rotate(${currentRotationRef.current}deg)`;
+    // Force reflow
+    void wheel.offsetHeight;
 
-    if (wheelRef.current) {
-      wheelRef.current.style.transition = `transform ${duration}ms ${easing}`;
-      wheelRef.current.style.transform = `rotate(${destination}deg)`;
-    }
+    // Lancement du spin + son de cliquetis progressif
+    requestAnimationFrame(() => {
+      wheel.style.transition = `transform ${duration}ms ${easing}`;
+      wheel.style.transform = `rotate(${destination}deg)`;
+      const approxTicks = Math.round(baseRotations * segmentCount);
+      playSpinTicks(duration, approxTicks);
+    });
 
-    window.setTimeout(async () => {
-      currentRotationRef.current = destination % 360;
+    const onEnd = async () => {
+      wheel.removeEventListener("transitionend", onEnd);
+      currentRotationRef.current = normalizeAngle(destination);
       setSpinning(false);
+
       const selected = segments[targetIndex];
       setWinner(selected);
       setWinnerIndex(targetIndex);
       setOpenResult(true);
 
-      const gained = pointsPerSegment[targetIndex % pointsPerSegment.length] ?? 0;
+      const gained = pointsPerSegment[targetIndex] ?? 0;
 
-      // Ajoute les points et journalise
       await supabase.rpc("add_points_and_log", {
         p_label: selected,
         p_points: gained,
       });
 
-      // Son de victoire + effet aléatoire
       playWinSound();
       const pool: EffectType[] = ["confetti", "smoke", "burst"];
       const randomEffect = pool[Math.floor(Math.random() * pool.length)];
@@ -139,11 +124,11 @@ const WheelOfFortune: React.FC = () => {
       if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
       effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 2800);
 
-      // Informe l’UI que les points ont changé
       window.dispatchEvent(new CustomEvent("points-updated"));
-
       showSuccess(`Résultat: ${selected} (+${gained} points)`);
-    }, duration + 50);
+    };
+
+    wheel.addEventListener("transitionend", onEnd, { once: true });
   };
 
   const winnerImg =
@@ -172,6 +157,7 @@ const WheelOfFortune: React.FC = () => {
             boxShadow:
               "inset 0 0 20px rgba(0,0,0,0.15), 0 20px 40px rgba(0,0,0,0.15)",
             filter: imagesReady ? "none" : "grayscale(0.1) brightness(0.98)",
+            willChange: "transform",
           }}
         >
           {/* Lignes de séparation */}
@@ -240,10 +226,8 @@ const WheelOfFortune: React.FC = () => {
         </div>
       )}
 
-      {/* Effets visuels */}
       {effect && <EffectsOverlay type={effect} />}
 
-      {/* Modale résultat avec l’image */}
       <Dialog open={openResult} onOpenChange={setOpenResult}>
         <DialogContent className="max-w-md">
           <DialogHeader>

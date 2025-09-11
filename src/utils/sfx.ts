@@ -37,37 +37,38 @@ function simpleTone(frequency: number, duration: number, type: OscillatorType = 
   osc.stop(audio.currentTime + duration + 0.02);
 }
 
-export function playSpinSound(durationMs = 4500) {
-  const audio = getCtx();
-  if (!audio) return;
-
-  const duration = durationMs / 1000;
-  const osc = audio.createOscillator();
-  const gain = audio.createGain();
-
-  osc.type = "sawtooth";
-  const startT = audio.currentTime;
-  osc.frequency.setValueAtTime(300, startT);
-  osc.frequency.exponentialRampToValueAtTime(1400, startT + duration * 0.9);
-
-  gain.gain.setValueAtTime(0.0001, startT);
-  gain.gain.exponentialRampToValueAtTime(0.18, startT + 0.15);
-  gain.gain.exponentialRampToValueAtTime(0.0001, startT + duration);
-
-  osc.connect(gain).connect(audio.destination);
-  osc.start();
-  osc.stop(startT + duration + 0.05);
-}
-
 export function playReadyChime() {
-  // petit carillon: deux notes rapides
   simpleTone(880, 0.12, "triangle", 0.12);
   setTimeout(() => simpleTone(1320, 0.14, "triangle", 0.12), 120);
 }
 
 export function playWinSound() {
-  // mini fanfare en 3 notes
-  simpleTone(523.25, 0.16, "square", 0.16); // C5
-  setTimeout(() => simpleTone(659.25, 0.18, "square", 0.16), 160); // E5
-  setTimeout(() => simpleTone(783.99, 0.22, "square", 0.16), 340); // G5
+  simpleTone(523.25, 0.16, "square", 0.16);
+  setTimeout(() => simpleTone(659.25, 0.18, "square", 0.16), 160);
+  setTimeout(() => simpleTone(783.99, 0.22, "square", 0.16), 340);
+}
+
+/**
+ * Son de spin style roue à cliquetis (ticks) qui ralentit progressivement.
+ * @param durationMs durée totale du spin
+ * @param totalTicks nombre approximatif de ticks à jouer (ex: tours * segments)
+ */
+export function playSpinTicks(durationMs = 4500, totalTicks = 48) {
+  const audio = getCtx();
+  if (!audio) return;
+
+  // Courbe ease-out pour espacer de plus en plus les ticks
+  const easeOut = (t: number) => 1 - Math.pow(1 - t, 2.2);
+
+  for (let i = 0; i < totalTicks; i++) {
+    const t = i / totalTicks;
+    const when = easeOut(t) * durationMs;
+
+    // Petit "clic" bref et sec
+    setTimeout(() => {
+      // mix de 2 brefs clics pour un peu de richesse
+      simpleTone(2200, 0.03, "square", 0.08);
+      setTimeout(() => simpleTone(1800, 0.02, "square", 0.06), 12);
+    }, when);
+  }
 }
