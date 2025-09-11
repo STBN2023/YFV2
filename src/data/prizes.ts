@@ -17,6 +17,6 @@ export const PRIZES: Prize[] = [
   { id: "prix9", label: "YOURI SWAG", image: "/prizes/prix9.png", points: 40 },
   { id: "prix10", label: "THIS IS NOT YOURI", image: "/prizes/prix10.png", points: 8 },
   { id: "prix11", label: "OURI SANTA DREAM", image: "/prizes/prix11.png", points: 50 },
-  { id: "prix12", label: "Prix 12", image: "/prizes/prix12.png", points: 18 },
+  { id: "prix12", label: "YOURI GOLDEN ANGEL", image: "/prizes/prix12.png", points: 18 },
   { id: "prix13", label: "Prix 13", image: "/prizes/prix13.png", points: 35 },
 ];
