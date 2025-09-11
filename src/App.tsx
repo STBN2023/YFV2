@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Leaderboard from "./pages/Leaderboard";
+import Game from "./pages/Game";
+import Pseudo from "./pages/Pseudo";
 import { SessionProvider } from "@/components/auth/SessionProvider";
 
 const queryClient = new QueryClient();
@@ -20,6 +22,8 @@ const App = () => (
         <SessionProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/pseudo" element={<Pseudo />} />
+            <Route path="/jeu" element={<Game />} />
             <Route path="/login" element={<Login />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
