@@ -18,7 +18,6 @@ const CollectionGrid = () => {
 
   const fetchCounts = () => {
     if (!userId) {
-      // Pas de session: pas de gains -> tout "Caché"
       setCounts({});
       return;
     }
@@ -82,7 +81,9 @@ const CollectionGrid = () => {
                     </div>
                   )}
                 </div>
-                <div className="mt-2 text-sm font-medium text-center">{p.label}</div>
+                <div className="mt-2 text-sm font-medium text-center">
+                  {got ? p.label : "???"}
+                </div>
               </CardContent>
             </Card>
           );
