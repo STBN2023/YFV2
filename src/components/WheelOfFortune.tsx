@@ -4,10 +4,14 @@ import React, { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess } from "@/utils/toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { usePreloadImages } from "@/hooks/use-preload-images";
 
 const WheelOfFortune: React.FC = () => {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+  const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
+  const [openResult, setOpenResult] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
 
@@ -31,6 +35,24 @@ const WheelOfFortune: React.FC = () => {
     []
   );
 
+  // Associe une image à chaque segment (on utilise les 8 premières)
+  const segmentImages = useMemo(
+    () => [
+      "/prizes/prix1.png",
+      "/prizes/prix2.png",
+      "/prizes/prix3.png",
+      "/prizes/prix4.png",
+      "/prizes/prix5.png",
+      "/prizes/prix6.png",
+      "/prizes/prix7.png",
+      "/prizes/prix8.png",
+    ],
+    []
+  );
+
+  // Précharge les images pour un affichage instantané
+  const imagesReady = usePreloadImages(segmentImages);
+
   const segmentAngle = 360 / segments.length;
 
   // Construit le dégradé conique pour un rendu net et coloré
@@ -51,17 +73,18 @@ const WheelOfFortune: React.FC = () => {
 
     setSpinning(true);
     setWinner(null);
+    setWinnerIndex(null);
+    setOpenResult(false);
 
-    // On choisit aléatoirement un segment à viser
+    // Choisit aléatoirement un segment à viser
     const targetIndex = Math.floor(Math.random() * segments.length);
 
-    // Ajoute une petite variation autour du centre du segment pour un rendu naturel
-    const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4); // +/- 20% du segment
-    const baseRotations = 6 + Math.random() * 2; // entre 6 et 8 tours pour un effet "grand jeu"
-    const targetAngle =
-      targetIndex * segmentAngle + segmentAngle / 2 + jitter;
+    // Variation autour du centre du segment pour un rendu naturel
+    const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4);
+    const baseRotations = 6 + Math.random() * 2; // 6 à 8 tours
+    const targetAngle = targetIndex * segmentAngle + segmentAngle / 2 + jitter;
 
-    // La roue tourne depuis l’angle courant
+    // Destination depuis l’angle courant
     const destination =
       currentRotationRef.current + baseRotations * 360 + targetAngle;
 
@@ -73,15 +96,22 @@ const WheelOfFortune: React.FC = () => {
       wheelRef.current.style.transform = `rotate(${destination}deg)`;
     }
 
-    // À la fin de l’anim, on fixe le gagnant et normalise l’angle courant
+    // À la fin, on fixe le gagnant et normalise l’angle courant
     window.setTimeout(() => {
-      currentRotationRef.current = destination % 360; // garde un angle réduit
+      currentRotationRef.current = destination % 360;
       setSpinning(false);
       const selected = segments[targetIndex];
       setWinner(selected);
+      setWinnerIndex(targetIndex);
+      setOpenResult(true);
       showSuccess(`Résultat: ${selected}`);
     }, duration + 50);
   };
+
+  const winnerImg =
+    winnerIndex !== null
+      ? segmentImages[winnerIndex % segmentImages.length]
+      : null;
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -103,6 +133,7 @@ const WheelOfFortune: React.FC = () => {
             background: conicBackground,
             boxShadow:
               "inset 0 0 20px rgba(0,0,0,0.15), 0 20px 40px rgba(0,0,0,0.15)",
+            filter: imagesReady ? "none" : "grayscale(0.1) brightness(0.98)",
           }}
         >
           {/* Lignes de séparation */}
@@ -153,6 +184,10 @@ const WheelOfFortune: React.FC = () => {
         </div>
       </div>
 
+      {!imagesReady && (
+        <div className="text-xs text-gray-500">Préchargement des images…</div>
+      )}
+
       <Button
         onClick={spinWheel}
         disabled={spinning}
@@ -166,6 +201,31 @@ const WheelOfFortune: React.FC = () => {
           <Badge className="text-base py-2 px-3">🎉 Résultat: {winner}</Badge>
         </div>
       )}
+
+      {/* Modale résultat avec l’image */}
+      <Dialog open={openResult} onOpenChange={setOpenResult}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Résultat</DialogTitle>
+            <DialogDescription>Voici votre lot/visuel associé au segment.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {winnerImg && (
+              <img
+                src={winnerImg}
+                alt={winner ?? "Image de résultat"}
+                className="w-full rounded-md shadow"
+              />
+            )}
+            {winner && (
+              <div className="text-center font-semibold">{winner}</div>
+            )}
+            <div className="flex justify-center">
+              <Button onClick={() => setOpenResult(false)}>OK</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
