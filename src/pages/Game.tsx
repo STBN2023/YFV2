@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import AudioToggle from "@/components/AudioToggle";
 import CollectionProgress from "@/components/CollectionProgress";
 import SpinHistory from "@/components/SpinHistory";
+import PrizeInfo from "@/components/PrizeInfo";
+import FloatingNav from "@/components/FloatingNav";
 
 const Game = () => {
   return (
@@ -23,6 +25,8 @@ const Game = () => {
       <UserPoints />
 
       <WheelOfFortune />
+
+      <PrizeInfo />
 
       <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
         <CollectionProgress />
@@ -42,6 +46,8 @@ const Game = () => {
       </div>
 
       <MadeWithDyad />
+
+      <FloatingNav />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import UserPoints from "@/components/UserPoints";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import CollectionTabs from "@/components/CollectionTabs";
+import FloatingNav from "@/components/FloatingNav";
 
 const Collection = () => {
   return (
@@ -35,6 +36,8 @@ const Collection = () => {
       </div>
 
       <MadeWithDyad />
+
+      <FloatingNav />
     </div>
   );
 };

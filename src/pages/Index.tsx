@@ -2,6 +2,7 @@ import GlowingTitle from "@/components/GlowingTitle";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import FloatingNav from "@/components/FloatingNav";
 
 const Index = () => {
   return (
@@ -23,6 +24,8 @@ const Index = () => {
       <div className="p-4">
         <MadeWithDyad />
       </div>
+
+      <FloatingNav />
     </div>
   );
 };

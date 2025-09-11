@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CollectionGrid from "@/components/CollectionGrid";
 import { useSession } from "@/components/auth/SessionProvider";
+import FloatingNav from "@/components/FloatingNav";
 
 type Row = {
   id: string;
@@ -85,6 +86,8 @@ const Leaderboard = () => {
           )}
         </div>
       </div>
+
+      <FloatingNav />
     </div>
   );
 };

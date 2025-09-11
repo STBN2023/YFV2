@@ -12,7 +12,7 @@ import { playReadyChime, playWinSound, playSpinTicks } from "@/utils/sfx";
 import { usePrizes } from "@/hooks/use-prizes";
 import { useSession } from "@/components/auth/SessionProvider";
 import { Link } from "react-router-dom";
-import { Star } from "lucide-react";
+import { Star, Share2 } from "lucide-react";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
@@ -142,7 +142,6 @@ const WheelOfFortune: React.FC = () => {
         p_points: gained,
       });
 
-      // Message fun et dynamique
       const options = [
         `Bravo ! Tu as gagné cette magnifique carte: "${selected}" ✨`,
         `Bim ! "${selected}" rejoint ta collection, +${gained} points 🎉`,
@@ -174,6 +173,16 @@ const WheelOfFortune: React.FC = () => {
     winnerIndex !== null
       ? segmentImages[winnerIndex % segmentImages.length]
       : null;
+
+  const shareResult = () => {
+    if (!winner) return;
+    const msg = `I just won "${winner}" on Youri Fortune! Come try your luck: ${window.location.origin}`;
+    // Use clipboard API with success/error toasts
+    navigator.clipboard.writeText(msg).then(
+      () => showSuccess("Copied to clipboard!"),
+      () => showError("Copy failed. Try again.")
+    );
+  };
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -225,7 +234,6 @@ const WheelOfFortune: React.FC = () => {
 
           <div className="absolute inset-4 rounded-full ring-1 ring-white/30 pointer-events-none" />
 
-          {/* Centre de la roue: remplacer le texte par une étoile */}
           <div className="absolute inset-1/4 md:inset-[28%] rounded-full bg-white flex items-center justify-center shadow-inner">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white to-gray-200" />
             <div className="relative z-10 flex items-center justify-center">
@@ -281,7 +289,11 @@ const WheelOfFortune: React.FC = () => {
             {winner && (
               <div className="text-center font-semibold">{winner}</div>
             )}
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={shareResult} className="inline-flex items-center gap-2">
+                <Share2 className="w-4 h-4" />
+                Share
+              </Button>
               <Button onClick={() => setOpenResult(false)}>OK</Button>
             </div>
           </div>
