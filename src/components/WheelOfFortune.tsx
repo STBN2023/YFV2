@@ -15,27 +15,7 @@ const WheelOfFortune: React.FC = () => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
 
-  // Segments (personnalisables)
-  const segments = useMemo(
-    () => [
-      "Gagnant !",
-      "Essaie encore",
-      "10 points",
-      "20 points",
-      "50 points",
-      "100 points",
-      "Perdu !",
-      "Bonus",
-    ],
-    []
-  );
-
-  const colors = useMemo(
-    () => ["#60A5FA", "#A78BFA", "#34D399", "#F59E0B", "#22D3EE", "#FB7185", "#F472B6", "#FDE047"],
-    []
-  );
-
-  // Associe une image à chaque segment (on utilise les 8 premières)
+  // Liste complète des images de prix (détermine le nombre de segments)
   const segmentImages = useMemo(
     () => [
       "/prizes/prix1.png",
@@ -46,14 +26,36 @@ const WheelOfFortune: React.FC = () => {
       "/prizes/prix6.png",
       "/prizes/prix7.png",
       "/prizes/prix8.png",
+      "/prizes/prix9.png",
+      "/prizes/prix10.png",
+      "/prizes/prix11.png",
+      "/prizes/prix12.png",
+      "/prizes/prix13.png",
     ],
     []
   );
 
-  // Précharge les images pour un affichage instantané
+  // Précharge les images pour un affichage instantané dans la modale
   const imagesReady = usePreloadImages(segmentImages);
 
-  const segmentAngle = 360 / segments.length;
+  // Labels alignés sur le nombre de prix
+  const segments = useMemo(
+    () => segmentImages.map((_, i) => `Prix ${i + 1}`),
+    [segmentImages]
+  );
+
+  const segmentCount = segments.length;
+  const segmentAngle = 360 / segmentCount;
+
+  // Couleurs générées dynamiquement pour chaque segment (répartition uniforme du spectre)
+  const colors = useMemo(
+    () =>
+      Array.from({ length: segmentCount }, (_, i) => {
+        const hue = Math.round((360 / segmentCount) * i);
+        return `hsl(${hue}, 85%, 55%)`;
+      }),
+    [segmentCount]
+  );
 
   // Construit le dégradé conique pour un rendu net et coloré
   const conicBackground = useMemo(() => {
@@ -77,7 +79,7 @@ const WheelOfFortune: React.FC = () => {
     setOpenResult(false);
 
     // Choisit aléatoirement un segment à viser
-    const targetIndex = Math.floor(Math.random() * segments.length);
+    const targetIndex = Math.floor(Math.random() * segmentCount);
 
     // Variation autour du centre du segment pour un rendu naturel
     const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4);
@@ -137,7 +139,7 @@ const WheelOfFortune: React.FC = () => {
           }}
         >
           {/* Lignes de séparation */}
-          {Array.from({ length: segments.length }).map((_, i) => (
+          {Array.from({ length: segmentCount }).map((_, i) => (
             <div
               key={`sep-${i}`}
               className="absolute inset-0"
@@ -158,7 +160,7 @@ const WheelOfFortune: React.FC = () => {
                   transform: `translate(-50%, -50%) rotate(${center}deg) translateY(calc(-50% + 52px)) rotate(${-center}deg)`,
                 }}
               >
-                <div className="text-xs md:text-sm font-semibold text-white drop-shadow text-center w-28 md:w-32">
+                <div className="text-[10px] md:text-xs font-semibold text-white drop-shadow text-center w-24 md:w-28">
                   {label}
                 </div>
               </div>
