@@ -12,6 +12,7 @@ import { playReadyChime, playWinSound, playSpinTicks } from "@/utils/sfx";
 import { usePrizes } from "@/hooks/use-prizes";
 import { useSession } from "@/components/auth/SessionProvider";
 import { Link } from "react-router-dom";
+import { Star } from "lucide-react";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
@@ -224,15 +225,11 @@ const WheelOfFortune: React.FC = () => {
 
           <div className="absolute inset-4 rounded-full ring-1 ring-white/30 pointer-events-none" />
 
+          {/* Centre de la roue: remplacer le texte par une étoile */}
           <div className="absolute inset-1/4 md:inset-[28%] rounded-full bg-white flex items-center justify-center shadow-inner">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white to-gray-200" />
-            <div className="relative z-10 text-center">
-              <div className="text-xs uppercase tracking-wide text-gray-500">
-                Roue
-              </div>
-              <div className="text-base md:text-lg font-bold text-gray-800">
-                Fortune
-              </div>
+            <div className="relative z-10 flex items-center justify-center">
+              <Star className="w-9 h-9 md:w-11 md:h-11 text-amber-500 drop-shadow" />
             </div>
             <div className="absolute inset-0 rounded-full ring-2 ring-gray-200" />
           </div>
