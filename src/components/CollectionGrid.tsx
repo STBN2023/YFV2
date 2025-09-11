@@ -16,7 +16,7 @@ const CollectionGrid = () => {
   const [counts, setCounts] = useState<Counts>({});
   const { prizes } = usePrizes();
 
-  useEffect(() => {
+  const fetchCounts = () => {
     if (!userId) return;
     supabase
       .from("spins")
@@ -31,7 +31,17 @@ const CollectionGrid = () => {
         });
         setCounts(c);
       });
+  };
+
+  useEffect(() => {
+    fetchCounts();
   }, [userId]);
+
+  useEffect(() => {
+    const handler = () => fetchCounts();
+    window.addEventListener("points-updated", handler as EventListener);
+    return () => window.removeEventListener("points-updated", handler as EventListener);
+  }, []);
 
   const items = useMemo(() => prizes, [prizes]);
 

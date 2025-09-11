@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess } from "@/utils/toast";
 import { CheckCircle2, XCircle, Loader2, Sparkles, RefreshCcw, X, AtSign } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const NAME_REGEX = /^[a-zA-Z0-9_.-]{3,20}$/;
 
@@ -34,6 +35,7 @@ function makeSuggestion(): string {
 const DisplayNameForm = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
+  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -92,29 +94,20 @@ const DisplayNameForm = () => {
     query.then(({ count, error }) => {
       if (cancelled) return;
       if (error) throw error;
-      // Si on a un userId, on ne considère pas son propre pseudo
-      if (userId) {
-        // Impossible de filtrer côté count/head pour exclure un id précis sans HEAD=false,
-        // mais comme on est en head:true on fait un simple count global;
-        // on considère indisponible s'il y a au moins un autre même nom.
-        // Pour rester simple, on garde la logique: count === 0 => dispo
-        setAvailable(!count || count === 0);
-      } else {
-        setAvailable(!count || count === 0);
-      }
+      setAvailable(!count || count === 0);
       setChecking(false);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [debouncedName, isValid, userId]);
+  }, [debouncedName, isValid]);
 
   const triggerAnon = async () => {
     await supabase.auth.signInAnonymously();
   };
 
-  const isReady = initialLoaded; // désormais prêt même sans session
+  const isReady = initialLoaded;
 
   if (!isReady) {
     return (
@@ -165,7 +158,6 @@ const DisplayNameForm = () => {
     }
 
     if (!uid) {
-      // Si malgré tout on n'a pas d'uid, on arrête proprement
       setSaving(false);
       return;
     }
@@ -179,6 +171,8 @@ const DisplayNameForm = () => {
     setSaving(false);
     setSaved(true);
     showSuccess("Pseudo enregistré !");
+    // Redirection rapide vers la roue
+    setTimeout(() => navigate("/jeu"), 350);
     setTimeout(() => setSaved(false), 1500);
   };
 
