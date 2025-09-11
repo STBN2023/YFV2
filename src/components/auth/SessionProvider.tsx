@@ -45,9 +45,15 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   useEffect(() => {
     if (loading) return;
 
-    if (!session && location.pathname !== "/login") {
-      navigate("/login", { replace: true });
-    } else if (session && location.pathname === "/login") {
+    // Si pas de session, on connecte automatiquement en anonyme (aucune action requise).
+    if (!session) {
+      // On déclenche la connexion anonyme; l'effet se réactualise quand la session arrive.
+      supabase.auth.signInAnonymously();
+      return;
+    }
+
+    // Si une session existe et qu'on est sur /login, on revient à l'accueil.
+    if (session && location.pathname === "/login") {
       navigate("/", { replace: true });
     }
   }, [session, loading, location.pathname, navigate]);

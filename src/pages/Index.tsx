@@ -4,6 +4,7 @@ import AuthStatus from "@/components/AuthStatus";
 import UserPoints from "@/components/UserPoints";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import DisplayNameForm from "@/components/DisplayNameForm";
 
 const Index = () => {
   return (
@@ -12,6 +13,8 @@ const Index = () => {
         <h1 className="text-3xl md:text-4xl font-bold">Roue de la Fortune</h1>
         <AuthStatus />
       </div>
+
+      <DisplayNameForm />
 
       <UserPoints />
 
