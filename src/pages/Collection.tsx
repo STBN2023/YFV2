@@ -23,13 +23,13 @@ const Collection = () => {
       </div>
 
       <div className="flex gap-3">
-        <Button asChild variant="default">
+        <Button asChild className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105">
           <Link to="/jeu">Aller à la roue</Link>
         </Button>
-        <Button asChild variant="secondary">
+        <Button asChild className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105">
           <Link to="/leaderboard">Voir le classement</Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105">
           <Link to="/">Accueil</Link>
         </Button>
       </div>

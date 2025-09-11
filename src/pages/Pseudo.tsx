@@ -22,7 +22,7 @@ const Pseudo = () => {
         <Button asChild className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105">
           <Link to="/jeu">Aller à la roue</Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105">
           <Link to="/">Retour à l’accueil</Link>
         </Button>
       </div>

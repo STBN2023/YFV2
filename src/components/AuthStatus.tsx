@@ -19,7 +19,13 @@ const AuthStatus = () => {
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-gray-600 dark:text-gray-300">Connecté: {email}</span>
-      <Button variant="secondary" size="sm" onClick={signOut}>Se déconnecter</Button>
+      <Button
+        size="sm"
+        onClick={signOut}
+        className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105"
+      >
+        Se déconnecter
+      </Button>
     </div>
   );
 };
