@@ -52,6 +52,16 @@ const DisplayNameForm = () => {
   const [seed, setSeed] = useState(0);
   const suggestions = useMemo(() => [makeSuggestion(), makeSuggestion(), makeSuggestion()], [seed]);
 
+  // Aide si l'initialisation prend trop longtemps
+  const [showHelp, setShowHelp] = useState(false);
+  useEffect(() => {
+    if (!userId || !initialLoaded) {
+      const id = setTimeout(() => setShowHelp(true), 2500);
+      return () => clearTimeout(id);
+    }
+    setShowHelp(false);
+  }, [userId, initialLoaded]);
+
   useEffect(() => {
     if (!userId) return;
     supabase
@@ -92,6 +102,11 @@ const DisplayNameForm = () => {
     };
   }, [debouncedName, isValid, userId]);
 
+  const triggerAnon = () => {
+    showSuccess("Connexion anonyme…");
+    void supabase.auth.signInAnonymously();
+  };
+
   if (!userId || !initialLoaded) {
     return (
       <div className="relative w-full max-w-3xl mx-auto rounded-2xl p-[1px] bg-gradient-to-r from-fuchsia-500/50 via-amber-400/50 to-emerald-400/50 shadow-lg">
@@ -100,10 +115,13 @@ const DisplayNameForm = () => {
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-amber-500" />
               <span className="bg-gradient-to-r from-fuchsia-500 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
-                Choisis ton pseudo gamer
+                Chargement du formulaire…
               </span>
             </CardTitle>
-            <CardDescription>Chargement du formulaire…</CardDescription>
+            <CardDescription className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              Initialisation de votre session
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
@@ -116,6 +134,28 @@ const DisplayNameForm = () => {
               <Skeleton className="h-8 w-24 rounded-full" />
               <Skeleton className="h-8 w-20 rounded-full" />
             </div>
+
+            {showHelp && (
+              <div className="pt-2 border-t mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={triggerAnon}
+                  className="rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105"
+                  size="sm"
+                >
+                  Continuer en anonyme
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                  className="rounded-full"
+                >
+                  Recharger la page
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
