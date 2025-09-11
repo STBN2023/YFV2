@@ -231,7 +231,7 @@ const WheelOfFortune: React.FC = () => {
       <Button
         onClick={spinWheel}
         disabled={spinning || prizes.length === 0 || !imagesReady}
-        className="px-6 py-2 font-semibold shadow-md"
+        className="px-6 py-2 font-semibold shadow-md rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {spinning ? "En cours..." : "Tourner la roue"}
       </Button>

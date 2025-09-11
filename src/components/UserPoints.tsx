@@ -37,7 +37,9 @@ const UserPoints = () => {
 
   return (
     <div className="flex items-center justify-center">
-      <Badge className="text-base py-2 px-3">Vos points: {points ?? "…"}</Badge>
+      <Badge className="text-base py-2 px-3 bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white shadow hover:brightness-105">
+        Vos points: {points ?? "…"}
+      </Badge>
     </div>
   );
 };
