@@ -4,9 +4,9 @@ import GlowingTitle from "@/components/GlowingTitle";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import AuthStatus from "@/components/AuthStatus";
 import UserPoints from "@/components/UserPoints";
-import CollectionGrid from "@/components/CollectionGrid";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import CollectionTabs from "@/components/CollectionTabs";
 
 const Collection = () => {
   return (
@@ -19,7 +19,7 @@ const Collection = () => {
       <UserPoints />
 
       <div className="w-full max-w-5xl">
-        <CollectionGrid />
+        <CollectionTabs />
       </div>
 
       <div className="flex gap-3">
