@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-fuchsia-50 via-amber-50 to-emerald-50">
       <div className="p-4 mt-4 flex justify-center">
         <GlowingTitle />
       </div>

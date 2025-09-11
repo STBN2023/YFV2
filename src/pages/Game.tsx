@@ -11,7 +11,7 @@ import SpinHistory from "@/components/SpinHistory";
 
 const Game = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-100 p-4 gap-6">
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-fuchsia-50 via-amber-50 to-emerald-50 p-4 gap-6">
       <div className="w-full max-w-3xl flex flex-col items-center gap-2 mt-2 relative">
         <GlowingTitle />
         <div className="absolute right-0 top-0">
