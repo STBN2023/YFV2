@@ -5,12 +5,12 @@ import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-100 p-4 gap-8">
-      <div className="w-full max-w-4xl flex flex-col items-center gap-4 mt-4">
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      <div className="p-4 mt-4 flex justify-center">
         <GlowingTitle />
       </div>
 
-      <div>
+      <div className="flex-1 grid place-items-center px-4">
         <Button
           asChild
           size="lg"
@@ -20,7 +20,9 @@ const Index = () => {
         </Button>
       </div>
 
-      <MadeWithDyad />
+      <div className="p-4">
+        <MadeWithDyad />
+      </div>
     </div>
   );
 };
