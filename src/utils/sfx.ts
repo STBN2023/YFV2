@@ -49,6 +49,16 @@ function simpleTone(frequency: number, duration: number, type: OscillatorType = 
   osc.stop(audio.currentTime + duration + 0.02);
 }
 
+function vibrate(pattern: number | number[]) {
+  try {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern as any);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export function playReadyChime() {
   if (isSfxMuted()) return;
   simpleTone(880, 0.12, "triangle", 0.12);
@@ -60,6 +70,8 @@ export function playWinSound() {
   simpleTone(523.25, 0.16, "square", 0.16);
   setTimeout(() => simpleTone(659.25, 0.18, "square", 0.16), 160);
   setTimeout(() => simpleTone(783.99, 0.22, "square", 0.16), 340);
+  // Haptique victoire
+  vibrate([12, 60, 24]);
 }
 
 /**
@@ -81,6 +93,8 @@ export function playSpinTicks(durationMs = 4500, totalTicks = 48) {
     setTimeout(() => {
       simpleTone(2200, 0.03, "square", 0.08);
       setTimeout(() => simpleTone(1800, 0.02, "square", 0.06), 12);
+      // Haptique légère à chaque tick (mobile)
+      vibrate(6);
     }, when);
   }
 }
