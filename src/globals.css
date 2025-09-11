@@ -155,3 +155,39 @@
   40% { transform: scale(1); opacity: 1; }
   100% { transform: scale(0.2); opacity: 0; }
 }
+
+/* --- V2 néon rose (fluo), clignotant et vibrant --- */
+.neon-v2 {
+  display: inline-block;
+  color: #ff3dbd;
+  text-shadow:
+    0 0 6px rgba(255, 61, 189, 0.8),
+    0 0 12px rgba(255, 61, 189, 0.65),
+    0 0 22px rgba(255, 61, 189, 0.5),
+    0 0 36px rgba(255, 61, 189, 0.35);
+  filter: drop-shadow(0 0 6px rgba(255, 61, 189, 0.45));
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  animation:
+    neon-flicker 2.6s ease-in-out infinite,
+    vibrate 0.08s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Clignotement irrégulier type néon */
+@keyframes neon-flicker {
+  0%, 8%, 10%, 12%, 14%, 16%, 18%, 22%, 55%, 100% { opacity: 1; }
+  9%, 13%, 17% { opacity: 0.55; }
+  11%, 15% { opacity: 0.8; }
+  60% { opacity: 0.9; }
+}
+
+/* Vibration subtile */
+@keyframes vibrate {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  20%  { transform: translate(0.3px, -0.2px) rotate(-0.25deg); }
+  40%  { transform: translate(-0.2px, 0.3px) rotate(0.2deg); }
+  60%  { transform: translate(0.2px, 0.2px) rotate(-0.15deg); }
+  80%  { transform: translate(-0.3px, -0.1px) rotate(0.25deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
