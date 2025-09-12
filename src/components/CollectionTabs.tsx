@@ -64,20 +64,47 @@ const CollectionTabs = () => {
   );
   const v1Complete = totalV1 > 0 && discoveredV1 >= totalV1;
 
-  // Test override: URL ?unlockV2=1 or ?v2=1, or localStorage('unlock-v2') === '1'
+  // Détection robuste de l'override test (query params variés, hash, localStorage)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const viaQuery = params.get("unlockV2") === "1" || params.get("v2") === "1";
+
+    const readParam = (name: string) =>
+      params.get(name) ??
+      params.get(name.toLowerCase()) ??
+      params.get(name.toUpperCase());
+
+    const isTruthy = (val: string | null) => {
+      if (val === null) return false;
+      const v = val.trim().toLowerCase();
+      if (v === "") return true;
+      if (["1", "true", "yes", "on", "y", "t"].includes(v)) return true;
+      if (["0", "false", "no", "off", "n", "f"].includes(v)) return false;
+      return true;
+    };
+
+    const viaQuery =
+      isTruthy(readParam("unlockV2")) ||
+      isTruthy(readParam("unlock-v2")) ||
+      isTruthy(readParam("v2")) ||
+      (location.hash?.toLowerCase().includes("v2") ?? false);
+
     let viaStorage = false;
     try {
-      viaStorage = localStorage.getItem("unlock-v2") === "1";
+      const stored =
+        localStorage.getItem("unlock-v2") ?? localStorage.getItem("unlockV2");
+      viaStorage = isTruthy(stored ?? null);
+      // Si on a un paramètre d'URL valide, on persiste pour les prochains chargements
+      if (viaQuery) {
+        localStorage.setItem("unlock-v2", "1");
+      }
     } catch {
       viaStorage = false;
     }
-    setUnlockOverride(viaQuery || viaStorage);
-  }, [location.search]);
 
-  // Celebrate only on real completion (no override)
+    setUnlockOverride(viaQuery || viaStorage);
+  }, [location.search, location.hash]);
+
+  // Célébration uniquement si complétion réelle (pas via override)
   useEffect(() => {
     if (!prevCompleteRef.current && v1Complete) {
       setEffect("confetti");
@@ -89,6 +116,13 @@ const CollectionTabs = () => {
   }, [v1Complete]);
 
   const v2Unlocked = v1Complete || unlockOverride;
+
+  // Si override actif, basculer automatiquement sur l'onglet V2 pour le test
+  useEffect(() => {
+    if (v2Unlocked && tab !== "v2") {
+      setTab("v2");
+    }
+  }, [v2Unlocked, tab]);
 
   const onChangeTab = (value: string) => {
     const next = value as "v1" | "v2";
