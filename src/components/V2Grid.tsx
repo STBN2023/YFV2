@@ -3,6 +3,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useV2Videos } from "@/hooks/use-v2-videos";
+import VideoTile from "@/components/VideoTile";
 
 const V2Grid: React.FC = () => {
   const { videos } = useV2Videos(); // bucket 'videos' par défaut
@@ -13,16 +14,11 @@ const V2Grid: React.FC = () => {
         <Card key={v.id} className="overflow-hidden relative">
           <CardContent className="p-2">
             <div className="relative aspect-square rounded-md overflow-hidden">
-              <video
-                className="w-full h-full object-cover"
+              <VideoTile
                 src={v.publicSrc}
+                fallbackSrcs={v.fallbackSrcs}
                 poster={v.poster}
-                muted
-                loop
-                playsInline
-                autoPlay
-                preload="metadata"
-                aria-label={v.title}
+                title={v.title}
               />
             </div>
             <div className="mt-2 text-sm font-medium text-center">
