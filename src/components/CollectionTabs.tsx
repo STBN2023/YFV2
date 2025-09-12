@@ -11,6 +11,7 @@ import { usePrizes } from "@/hooks/use-prizes";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { showError, showSuccess } from "@/utils/toast";
 import EffectsOverlay from "@/components/EffectsOverlay";
+import V2Grid from "@/components/V2Grid";
 
 type Counts = Record<string, number>;
 
@@ -71,9 +72,6 @@ const CollectionTabs = () => {
     prevCompleteRef.current = v1Complete;
   }, [v1Complete]);
 
-  // V2 placeholders: same count as V1
-  const v2Placeholders = useMemo(() => Array.from({ length: totalV1 }), [totalV1]);
-
   const onChangeTab = (value: string) => {
     const next = (value as "v1" | "v2");
     if (next === "v2" && !v1Complete) {
@@ -124,36 +122,34 @@ const CollectionTabs = () => {
         </TabsContent>
 
         <TabsContent value="v2" className="mt-0">
-          {!v1Complete && (
-            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-100 p-3 text-sm flex items-center gap-2">
-              <Lock className="w-4 h-4" />
-              <span>Terminez la collection V1 pour débloquer la V2.</span>
-            </div>
-          )}
+          {!v1Complete ? (
+            <>
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-100 p-3 text-sm flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                <span>Terminez la collection V1 pour débloquer la V2.</span>
+              </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {v2Placeholders.map((_, i) => (
-              <Card key={i} className="overflow-hidden relative">
-                <CardContent className="p-2">
-                  <div className="relative aspect-square rounded-md overflow-hidden">
-                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 flex items-center justify-center">
-                      <div className="flex flex-col items-center text-gray-600 dark:text-gray-300">
-                        {v1Complete ? (
-                          <Sparkles className="w-6 h-6 mb-1" />
-                        ) : (
-                          <Lock className="w-6 h-6 mb-1" />
-                        )}
-                        <span className="text-sm">{v1Complete ? "Bientôt" : "Verrouillé"}</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {Array.from({ length: totalV1 }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden relative">
+                    <CardContent className="p-2">
+                      <div className="relative aspect-square rounded-md overflow-hidden">
+                        <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 flex items-center justify-center">
+                          <div className="flex flex-col items-center text-gray-600 dark:text-gray-300">
+                            <Lock className="w-6 h-6 mb-1" />
+                            <span className="text-sm">Verrouillé</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-sm font-medium text-center">
-                    {v1Complete ? "V2 — bientôt disponible" : "???"}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      <div className="mt-2 text-sm font-medium text-center">???</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            <V2Grid prizes={prizes} />
+          )}
         </TabsContent>
       </Tabs>
     </div>
