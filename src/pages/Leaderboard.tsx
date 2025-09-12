@@ -35,11 +35,11 @@ const Leaderboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-fuchsia-50 via-amber-50 to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-fuchsia-50 via-amber-50 to-emerald-50 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-900">
       <div className="px-4 py-8 max-w-5xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Classement</h1>
-          <Link to="/" className="text-blue-600 hover:underline">← Retour</Link>
+          <Link to="/" className="text-blue-600 dark:text-blue-400 hover:underline">← Retour</Link>
         </div>
 
         {session && (
@@ -51,28 +51,28 @@ const Leaderboard = () => {
         <div>
           <h2 className="text-xl font-semibold mb-3">Top joueurs</h2>
           {loading ? (
-            <div className="text-gray-500">Chargement...</div>
+            <div className="text-gray-600 dark:text-gray-300">Chargement...</div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white/90 dark:bg-neutral-900/80 backdrop-blur border border-white/60 dark:border-white/10 rounded-lg shadow overflow-hidden">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-gray-50/80 dark:bg-neutral-800/60">
                   <TableRow>
-                    <TableHead className="w-16">#</TableHead>
-                    <TableHead>Joueur</TableHead>
-                    <TableHead className="text-right">Points</TableHead>
+                    <TableHead className="w-16 text-gray-700 dark:text-gray-200">#</TableHead>
+                    <TableHead className="text-gray-700 dark:text-gray-200">Joueur</TableHead>
+                    <TableHead className="text-right text-gray-700 dark:text-gray-200">Points</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((r, i) => {
                     const name = [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.id.slice(0, 8);
                     return (
-                      <TableRow key={r.id}>
+                      <TableRow key={r.id} className="hover:bg-gray-50/60 dark:hover:bg-neutral-800/50">
                         <TableCell className="font-medium">{i + 1}</TableCell>
                         <TableCell className="flex items-center gap-3">
                           {r.avatar_url ? (
                             <img src={r.avatar_url} alt={name} className="w-8 h-8 rounded-full object-cover" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gray-200" />
+                            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-neutral-700" />
                           )}
                           <span>{name}</span>
                         </TableCell>
