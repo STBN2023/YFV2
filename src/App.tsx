@@ -11,6 +11,7 @@ import Game from "./pages/Game";
 import Pseudo from "./pages/Pseudo";
 import { SessionProvider } from "@/components/auth/SessionProvider";
 import Collection from "./pages/Collection";
+import AdminUpload from "./pages/AdminUpload";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/collection" element={<Collection />} />
             <Route path="/login" element={<Login />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/admin" element={<AdminUpload />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
