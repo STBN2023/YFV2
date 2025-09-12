@@ -2,18 +2,20 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { V2_VIDEOS } from "@/data/v2-videos";
+import { useV2Videos } from "@/hooks/use-v2-videos";
 
 const V2Grid: React.FC = () => {
+  const { videos } = useV2Videos(); // bucket 'videos' par défaut
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      {V2_VIDEOS.map((v) => (
+      {videos.map((v) => (
         <Card key={v.id} className="overflow-hidden relative">
           <CardContent className="p-2">
             <div className="relative aspect-square rounded-md overflow-hidden">
               <video
                 className="w-full h-full object-cover"
-                src={encodeURI(v.src)}
+                src={v.publicSrc}
                 poster={v.poster}
                 muted
                 loop
