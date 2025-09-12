@@ -1,0 +1,54 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  deploy-preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy Preview
+        uses: vercel/actions/deploy@v1
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: .
+          # preview par défaut (prod: false)
+
+  deploy-production:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy Production
+        uses: vercel/actions/deploy@v1
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: .
+          prod: true
