@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, Sparkles } from "lucide-react";
+import { Lock } from "lucide-react";
 import CollectionGrid from "@/components/CollectionGrid";
 import { useSession } from "@/components/auth/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,7 +61,6 @@ const CollectionTabs = () => {
   );
   const v1Complete = totalV1 > 0 && discoveredV1 >= totalV1;
 
-  // Celebrate when V1 becomes complete (transition false -> true)
   useEffect(() => {
     if (!prevCompleteRef.current && v1Complete) {
       setEffect("confetti");
@@ -73,7 +72,7 @@ const CollectionTabs = () => {
   }, [v1Complete]);
 
   const onChangeTab = (value: string) => {
-    const next = (value as "v1" | "v2");
+    const next = value as "v1" | "v2";
     if (next === "v2" && !v1Complete) {
       showError("Terminez la collection V1 pour débloquer la V2.");
       return;
@@ -148,7 +147,7 @@ const CollectionTabs = () => {
               </div>
             </>
           ) : (
-            <V2Grid prizes={prizes} />
+            <V2Grid />
           )}
         </TabsContent>
       </Tabs>
