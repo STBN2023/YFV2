@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { showError, showSuccess } from "@/utils/toast";
 import EffectsOverlay from "@/components/EffectsOverlay";
 import V2Grid from "@/components/V2Grid";
+import { useLocation } from "react-router-dom";
 
 type Counts = Record<string, number>;
 
@@ -23,6 +24,8 @@ const CollectionTabs = () => {
   const [tab, setTab] = useState<"v1" | "v2">("v1");
   const [effect, setEffect] = useState<"confetti" | null>(null);
   const prevCompleteRef = useRef<boolean>(false);
+  const [unlockOverride, setUnlockOverride] = useState(false);
+  const location = useLocation();
 
   const fetchCounts = () => {
     if (!userId) {
@@ -61,6 +64,20 @@ const CollectionTabs = () => {
   );
   const v1Complete = totalV1 > 0 && discoveredV1 >= totalV1;
 
+  // Test override: URL ?unlockV2=1 or ?v2=1, or localStorage('unlock-v2') === '1'
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const viaQuery = params.get("unlockV2") === "1" || params.get("v2") === "1";
+    let viaStorage = false;
+    try {
+      viaStorage = localStorage.getItem("unlock-v2") === "1";
+    } catch {
+      viaStorage = false;
+    }
+    setUnlockOverride(viaQuery || viaStorage);
+  }, [location.search]);
+
+  // Celebrate only on real completion (no override)
   useEffect(() => {
     if (!prevCompleteRef.current && v1Complete) {
       setEffect("confetti");
@@ -71,9 +88,11 @@ const CollectionTabs = () => {
     prevCompleteRef.current = v1Complete;
   }, [v1Complete]);
 
+  const v2Unlocked = v1Complete || unlockOverride;
+
   const onChangeTab = (value: string) => {
     const next = value as "v1" | "v2";
-    if (next === "v2" && !v1Complete) {
+    if (next === "v2" && !v2Unlocked) {
       showError("Terminez la collection V1 pour débloquer la V2.");
       return;
     }
@@ -97,13 +116,13 @@ const CollectionTabs = () => {
                 >
                   <span className="flex items-center gap-2">
                     V2
-                    {!v1Complete && (
+                    {!v2Unlocked && (
                       <Lock className="w-4 h-4 text-gray-500" aria-hidden />
                     )}
                   </span>
                 </TabsTrigger>
               </TooltipTrigger>
-              {!v1Complete && (
+              {!v2Unlocked && (
                 <TooltipContent side="top" align="center">
                   Terminez la collection V1 pour accéder à la V2.
                 </TooltipContent>
@@ -121,7 +140,7 @@ const CollectionTabs = () => {
         </TabsContent>
 
         <TabsContent value="v2" className="mt-0">
-          {!v1Complete ? (
+          {!v2Unlocked ? (
             <>
               <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-100 p-3 text-sm flex items-center gap-2">
                 <Lock className="w-4 h-4" />
