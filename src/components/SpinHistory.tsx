@@ -29,7 +29,7 @@ const SpinHistory: React.FC = () => {
       .select("id, prize_label, points, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(5)
+      .limit(3)
       .then(({ data, error }) => {
         if (error) throw error;
         setRows((data as Row[]) ?? []);
@@ -60,8 +60,8 @@ const SpinHistory: React.FC = () => {
         ) : (
           <ul className="text-sm space-y-1">
             {rows.map((r) => (
-              <li key={r.id} className="flex items-center justify-between">
-                <span className="truncate max-w-[60%]">{r.prize_label ?? "—"}</span>
+              <li key={r.id} className="flex items-center justify-between gap-2">
+                <span className="truncate max-w-[50%]">{r.prize_label ?? "—"}</span>
                 <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString()}</span>
                 <span className="font-semibold">+{r.points ?? 0}</span>
               </li>
