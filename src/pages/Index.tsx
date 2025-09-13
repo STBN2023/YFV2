@@ -12,13 +12,22 @@ const Index = () => {
       </div>
 
       <div className="flex-1 grid place-items-center px-4">
-        <Button
-          asChild
-          size="lg"
-          className="px-8 py-6 text-lg rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white shadow hover:brightness-105"
-        >
-          <Link to="/pseudo">Jouer maintenant</Link>
-        </Button>
+        <div className="flex flex-col items-center gap-3">
+          <Button
+            asChild
+            size="lg"
+            className="px-8 py-6 text-lg rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white shadow hover:brightness-105"
+          >
+            <Link to="/pseudo">Jouer maintenant</Link>
+          </Button>
+
+          <Link
+            to="/admin"
+            className="text-xs text-blue-600 hover:text-blue-700 underline"
+          >
+            Admin: uploader les vidéos V2
+          </Link>
+        </div>
       </div>
 
       <div className="p-4">
