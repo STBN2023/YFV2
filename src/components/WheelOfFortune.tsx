@@ -13,33 +13,107 @@ import { usePrizes } from "@/hooks/use-prizes";
 import { useSession } from "@/components/auth/SessionProvider";
 import { Link } from "react-router-dom";
 import { Star, Share2 } from "lucide-react";
+import { useV2Videos } from "@/hooks/use-v2-videos";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
 const normalizeAngle = (deg: number) => ((deg % 360) + 360) % 360;
 
+type Segment = {
+  label: string;
+  image: string;
+  points: number;
+};
+
 const WheelOfFortune: React.FC = () => {
   const { session } = useSession();
+  const userId = session?.user?.id ?? null;
+
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
   const [openResult, setOpenResult] = useState(false);
   const [effect, setEffect] = useState<EffectType | null>(null);
   const [winMessage, setWinMessage] = useState<string>("");
+  const [v1Complete, setV1Complete] = useState(false);
+  const [overrideUnlock, setOverrideUnlock] = useState(false);
+
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
   const effectTimeoutRef = useRef<number | null>(null);
 
-  const { prizes } = usePrizes();
+  const { prizes } = usePrizes(); // V1 catalogue (avec fallback)
+  const { videos } = useV2Videos(); // V2 catalogue (vidéos)
 
-  const segmentImages = useMemo(() => prizes.map((p) => p.image), [prizes]);
-  const segments = useMemo(() => prizes.map((p) => p.label), [prizes]);
-  const pointsPerSegment = useMemo(() => prizes.map((p) => p.points), [prizes]);
-  const segmentCount = segments.length || 1;
+  // Construire les segments V1 et V2
+  const v1Segments = useMemo<Segment[]>(
+    () =>
+      prizes.map((p) => ({
+        label: p.label,
+        image: p.image,
+        points: p.points,
+      })),
+    [prizes]
+  );
+
+  const v2Segments = useMemo<Segment[]>(
+    () =>
+      videos.map((v) => ({
+        label: v.title,
+        image: v.poster ?? "/placeholder.svg",
+        points: 0, // ajustable si besoin
+      })),
+    [videos]
+  );
+
+  // Déterminer si V2 est débloquée: V1 complétée OU override localStorage
+  useEffect(() => {
+    try {
+      setOverrideUnlock(localStorage.getItem("unlock-v2") === "1");
+    } catch {
+      setOverrideUnlock(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userId || v1Segments.length === 0) {
+      setV1Complete(false);
+      return;
+    }
+    supabase
+      .from("spins")
+      .select("prize_label")
+      .eq("user_id", userId)
+      .then(({ data, error }) => {
+        if (error) throw error;
+        const got = new Set<string>();
+        (data ?? []).forEach((row) => got.add((row as any).prize_label as string));
+        const labelsV1 = new Set(v1Segments.map((s) => s.label));
+        let count = 0;
+        labelsV1.forEach((lbl) => {
+          if (got.has(lbl)) count += 1;
+        });
+        setV1Complete(count >= v1Segments.length);
+      });
+  }, [userId, v1Segments]);
+
+  const v2Unlocked = v1Complete || overrideUnlock;
+
+  const pool = useMemo<Segment[]>(
+    () => (v2Unlocked ? [...v1Segments, ...v2Segments] : v1Segments),
+    [v2Unlocked, v1Segments, v2Segments]
+  );
+
+  const segmentLabels = useMemo(() => pool.map((s) => s.label), [pool]);
+  const segmentImages = useMemo(() => pool.map((s) => s.image), [pool]);
+  const pointsPerSegment = useMemo(() => pool.map((s) => s.points), [pool]);
+
+  const segmentCount = pool.length || 1;
   const segmentAngle = 360 / segmentCount;
 
   const imagesReady = usePreloadImages(segmentImages);
 
+  // Coloration de la roue
   const colors = useMemo(
     () =>
       Array.from({ length: segmentCount }, (_, i) => {
@@ -50,7 +124,7 @@ const WheelOfFortune: React.FC = () => {
   );
 
   const conicBackground = useMemo(() => {
-    const stops = segments
+    const stops = pool
       .map((_, i) => {
         const start = i * segmentAngle;
         const end = (i + 1) * segmentAngle;
@@ -59,7 +133,7 @@ const WheelOfFortune: React.FC = () => {
       })
       .join(", ");
     return `conic-gradient(${stops})`;
-  }, [segments, colors, segmentAngle]);
+  }, [pool, colors, segmentAngle]);
 
   useEffect(() => {
     if (imagesReady) {
@@ -91,7 +165,7 @@ const WheelOfFortune: React.FC = () => {
   };
 
   const spinWheel = async () => {
-    if (spinning || prizes.length === 0) return;
+    if (spinning || pool.length === 0) return;
 
     const ok = await ensureAuth();
     if (!ok) return;
@@ -131,7 +205,7 @@ const WheelOfFortune: React.FC = () => {
       currentRotationRef.current = normalizeAngle(destination);
       setSpinning(false);
 
-      const selected = segments[targetIndex];
+      const selected = segmentLabels[targetIndex];
       setWinner(selected);
       setWinnerIndex(targetIndex);
 
@@ -143,7 +217,7 @@ const WheelOfFortune: React.FC = () => {
       });
 
       const options = [
-        `Bravo ! Tu as gagné cette magnifique carte: "${selected}" ✨`,
+        `Bravo ! Tu as gagné "${selected}" ✨`,
         `Bim ! "${selected}" rejoint ta collection, +${gained} points 🎉`,
         `Coup de bol cosmique: "${selected}" est à toi 🚀`,
         `Le destin a tourné en ta faveur: "${selected}" ! 🪄`,
@@ -156,8 +230,8 @@ const WheelOfFortune: React.FC = () => {
       setOpenResult(true);
 
       playWinSound();
-      const pool: EffectType[] = ["confetti", "smoke", "burst"];
-      const randomEffect = pool[Math.floor(Math.random() * pool.length)];
+      const poolEffects: EffectType[] = ["confetti", "smoke", "burst"];
+      const randomEffect = poolEffects[Math.floor(Math.random() * poolEffects.length)];
       setEffect(randomEffect);
       if (effectTimeoutRef.current) window.clearTimeout(effectTimeoutRef.current);
       effectTimeoutRef.current = window.setTimeout(() => setEffect(null), 2800);
@@ -177,7 +251,6 @@ const WheelOfFortune: React.FC = () => {
   const shareResult = () => {
     if (!winner) return;
     const msg = `I just won "${winner}" on Youri Fortune! Come try your luck: ${window.location.origin}`;
-    // Use clipboard API with success/error toasts
     navigator.clipboard.writeText(msg).then(
       () => showSuccess("Copied to clipboard!"),
       () => showError("Copy failed. Try again.")
@@ -215,7 +288,7 @@ const WheelOfFortune: React.FC = () => {
             </div>
           ))}
 
-          {segments.map((label, i) => {
+          {segmentLabels.map((label, i) => {
             const center = i * segmentAngle + segmentAngle / 2;
             return (
               <div
@@ -250,7 +323,7 @@ const WheelOfFortune: React.FC = () => {
 
       <Button
         onClick={spinWheel}
-        disabled={spinning || prizes.length === 0 || !imagesReady}
+        disabled={spinning || pool.length === 0 || !imagesReady}
         className="px-6 py-2 font-semibold shadow-md rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {spinning ? "En cours..." : "Tourner la roue"}
