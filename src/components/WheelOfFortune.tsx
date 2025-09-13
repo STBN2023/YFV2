@@ -14,6 +14,7 @@ import { useSession } from "@/components/auth/SessionProvider";
 import { Link } from "react-router-dom";
 import { Star, Share2 } from "lucide-react";
 import { useV2Videos } from "@/hooks/use-v2-videos";
+import VideoTile from "@/components/VideoTile";
 
 type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
 
@@ -248,6 +249,12 @@ const WheelOfFortune: React.FC = () => {
       ? segmentImages[winnerIndex % segmentImages.length]
       : null;
 
+  // Si le lot gagné correspond à une vidéo V2, on la récupère
+  const winnerVideo = useMemo(
+    () => (winner ? videos.find((v) => v.title === winner) : undefined),
+    [videos, winner]
+  );
+
   const shareResult = () => {
     if (!winner) return;
     const msg = `I just won "${winner}" on Youri Fortune! Come try your luck: ${window.location.origin}`;
@@ -352,13 +359,23 @@ const WheelOfFortune: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            {winnerImg && (
+            {winner && winnerVideo ? (
+              <div className="w-full overflow-hidden rounded-md">
+                <VideoTile
+                  src={winnerVideo.publicSrc}
+                  fallbackSrcs={winnerVideo.fallbackSrcs}
+                  poster={winnerVideo.poster}
+                  title={winnerVideo.title}
+                  className="w-full h-auto"
+                />
+              </div>
+            ) : winnerImg ? (
               <img
                 src={winnerImg}
                 alt={winner ?? "Image de résultat"}
                 className="w-full rounded-md shadow"
               />
-            )}
+            ) : null}
             {winner && (
               <div className="text-center font-semibold">{winner}</div>
             )}
