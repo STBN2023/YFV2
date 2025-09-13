@@ -43,10 +43,9 @@ const WheelOfFortune: React.FC = () => {
   const currentRotationRef = useRef(0);
   const effectTimeoutRef = useRef<number | null>(null);
 
-  const { prizes } = usePrizes(); // V1 catalogue (avec fallback)
-  const { videos } = useV2Videos(); // V2 catalogue (vidéos)
+  const { prizes } = usePrizes();
+  const { videos } = useV2Videos();
 
-  // Construire les segments V1 et V2
   const v1Segments = useMemo<Segment[]>(
     () =>
       prizes.map((p) => ({
@@ -62,12 +61,11 @@ const WheelOfFortune: React.FC = () => {
       videos.map((v) => ({
         label: v.title,
         image: v.poster ?? "/placeholder.svg",
-        points: 0, // ajustable si besoin
+        points: 0,
       })),
     [videos]
   );
 
-  // Déterminer si V2 est débloquée: V1 complétée OU override localStorage
   useEffect(() => {
     try {
       setOverrideUnlock(localStorage.getItem("unlock-v2") === "1");
@@ -114,7 +112,6 @@ const WheelOfFortune: React.FC = () => {
 
   const imagesReady = usePreloadImages(segmentImages);
 
-  // Coloration de la roue
   const colors = useMemo(
     () =>
       Array.from({ length: segmentCount }, (_, i) => {
@@ -249,7 +246,6 @@ const WheelOfFortune: React.FC = () => {
       ? segmentImages[winnerIndex % segmentImages.length]
       : null;
 
-  // Si le lot gagné correspond à une vidéo V2, on la récupère
   const winnerVideo = useMemo(
     () => (winner ? videos.find((v) => v.title === winner) : undefined),
     [videos, winner]
@@ -294,23 +290,6 @@ const WheelOfFortune: React.FC = () => {
               <div className="absolute top-1/2 left-1/2 origin-top -translate-x-1/2 -translate-y-1/2 h-[calc(50%-10px)] w-px bg-white/70" />
             </div>
           ))}
-
-          {segmentLabels.map((label, i) => {
-            const center = i * segmentAngle + segmentAngle / 2;
-            return (
-              <div
-                key={label + i}
-                className="absolute top-1/2 left-1/2"
-                style={{
-                  transform: `translate(-50%, -50%) rotate(${center}deg) translateY(calc(-50% + 52px)) rotate(${-center}deg)`,
-                }}
-              >
-                <div className="text-[10px] md:text-xs font-semibold text-white drop-shadow text-center w-24 md:w-28">
-                  {label}
-                </div>
-              </div>
-            );
-          })}
 
           <div className="absolute inset-4 rounded-full ring-1 ring-white/30 pointer-events-none" />
 
