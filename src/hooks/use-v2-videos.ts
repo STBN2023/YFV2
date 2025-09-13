@@ -9,7 +9,6 @@ export type ResolvedVideo = V2Video & {
 };
 
 function buildLocalPaths(originalSrc: string) {
-  // On génère des variantes robustes pour gérer espaces superflus, etc.
   const src = originalSrc.startsWith("/") ? originalSrc : `/${originalSrc}`;
   const lastSlash = src.lastIndexOf("/");
   const dir = lastSlash >= 0 ? src.slice(0, lastSlash + 1) : "/";
@@ -19,10 +18,26 @@ function buildLocalPaths(originalSrc: string) {
   const noTrailingBeforeExt = trimmed.replace(/\s+(\.[A-Za-z0-9]+)$/i, "$1");
   const collapsedSpaces = noTrailingBeforeExt.replace(/\s+/g, " ");
 
-  const variants = Array.from(
-    new Set([src, `${dir}${trimmed}`, `${dir}${noTrailingBeforeExt}`, `${dir}${collapsedSpaces}`])
-  );
-  return variants;
+  const baseVariants = [
+    src,
+    `${dir}${trimmed}`,
+    `${dir}${noTrailingBeforeExt}`,
+    `${dir}${collapsedSpaces}`,
+  ];
+
+  // Variantes encodées (pour gérer espaces/accents)
+  const encodedVariants = baseVariants.flatMap((v) => {
+    const ls = v.lastIndexOf("/");
+    const d = ls >= 0 ? v.slice(0, ls + 1) : "/";
+    const f = ls >= 0 ? v.slice(ls + 1) : v.replace(/^\//, "");
+    return [
+      encodeURI(v),
+      d + encodeURIComponent(f),
+    ];
+  });
+
+  const unique = Array.from(new Set([...baseVariants, ...encodedVariants]));
+  return unique;
 }
 
 /**

@@ -11,20 +11,15 @@ type Props = {
 };
 
 const VideoTile: React.FC<Props> = ({ src, fallbackSrcs = [], poster, title, className }) => {
-  const sources = useMemo(() => [src, ...fallbackSrcs].filter(Boolean), [src, fallbackSrcs]);
-  const [idx, setIdx] = useState(0);
+  const sources = useMemo(() => {
+    const all = [src, ...fallbackSrcs].filter(Boolean);
+    // Dédupliquer en conservant l'ordre
+    return Array.from(new Set(all));
+  }, [src, fallbackSrcs]);
+
   const [failed, setFailed] = useState(false);
 
-  const onError = () => {
-    const next = idx + 1;
-    if (next < sources.length) {
-      setIdx(next);
-    } else {
-      setFailed(true);
-    }
-  };
-
-  if (failed) {
+  if (failed || sources.length === 0) {
     return (
       <div className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 flex items-center justify-center ${className ?? ""}`}>
         <div className="text-center text-gray-700 dark:text-gray-200">
@@ -38,16 +33,19 @@ const VideoTile: React.FC<Props> = ({ src, fallbackSrcs = [], poster, title, cla
   return (
     <video
       className={`w-full h-full object-cover ${className ?? ""}`}
-      src={sources[idx]}
       poster={poster}
       muted
-      loop
       playsInline
       autoPlay
+      loop
       preload="metadata"
       aria-label={title}
-      onError={onError}
-    />
+      onError={() => setFailed(true)}
+    >
+      {sources.map((s, i) => (
+        <source key={i} src={s} type="video/mp4" />
+      ))}
+    </video>
   );
 };
 
