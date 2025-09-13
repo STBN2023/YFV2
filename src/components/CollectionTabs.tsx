@@ -15,13 +15,21 @@ import V2Grid from "@/components/V2Grid";
 import { useLocation } from "react-router-dom";
 
 type Counts = Record<string, number>;
+const TAB_STORAGE_KEY = "collection-tab";
 
 const CollectionTabs = () => {
   const { session } = useSession();
   const userId = session?.user?.id;
   const { prizes } = usePrizes();
   const [counts, setCounts] = useState<Counts>({});
-  const [tab, setTab] = useState<"v1" | "v2">("v1");
+  const [tab, setTab] = useState<"v1" | "v2">(() => {
+    try {
+      const saved = localStorage.getItem(TAB_STORAGE_KEY);
+      return saved === "v2" ? "v2" : "v1";
+    } catch {
+      return "v1";
+    }
+  });
   const [effect, setEffect] = useState<"confetti" | null>(null);
   const prevCompleteRef = useRef<boolean>(false);
   const [unlockOverride, setUnlockOverride] = useState(false);
@@ -93,7 +101,6 @@ const CollectionTabs = () => {
       const stored =
         localStorage.getItem("unlock-v2") ?? localStorage.getItem("unlockV2");
       viaStorage = isTruthy(stored ?? null);
-      // Si on a un paramètre d'URL valide, on persiste pour les prochains chargements
       if (viaQuery) {
         localStorage.setItem("unlock-v2", "1");
       }
@@ -117,12 +124,21 @@ const CollectionTabs = () => {
 
   const v2Unlocked = v1Complete || unlockOverride;
 
-  // Si override actif, basculer automatiquement sur l'onglet V2 pour le test
+  // IMPORTANT: ne plus forcer l'onglet V2; si V2 est verrouillé mais sélectionné (stocké), on revient à V1.
   useEffect(() => {
-    if (v2Unlocked && tab !== "v2") {
-      setTab("v2");
+    if (!v2Unlocked && tab === "v2") {
+      setTab("v1");
     }
   }, [v2Unlocked, tab]);
+
+  // Persiste l'onglet choisi
+  useEffect(() => {
+    try {
+      localStorage.setItem(TAB_STORAGE_KEY, tab);
+    } catch {
+      // ignore
+    }
+  }, [tab]);
 
   const onChangeTab = (value: string) => {
     const next = value as "v1" | "v2";
