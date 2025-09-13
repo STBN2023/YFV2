@@ -48,17 +48,18 @@ const CollectionProgress: React.FC = () => {
   if (!userId || total === 0) return null;
 
   return (
-    <Card className="w-full max-w-md border-white/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/80 backdrop-blur">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
+    <Card className="w-full border-white/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/80 backdrop-blur">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between mb-1">
           <div className="text-sm font-semibold">Progression V1</div>
-          <div className="text-xs text-gray-600 dark:text-gray-300">{discovered}/{total} cartes</div>
+          <div className="text-[11px] text-gray-600 dark:text-gray-300">{discovered}/{total} cartes</div>
         </div>
         <GradientProgress
           value={pct}
-          height="lg"
+          height="md"
           from="from-fuchsia-500"
           to="to-emerald-400"
+          showPercent
         />
       </CardContent>
     </Card>

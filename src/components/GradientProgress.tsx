@@ -9,19 +9,19 @@ type Props = {
   height?: "sm" | "md" | "lg";
   from?: string; // ex: "from-fuchsia-500"
   to?: string;   // ex: "to-emerald-400"
-  showPercent?: boolean;
+  showPercent?: boolean; // affichage du pourcentage au centre
 };
 
 const HEIGHTS: Record<NonNullable<Props["height"]>, string> = {
-  sm: "h-2",
+  sm: "h-2.5",
   md: "h-3",
-  lg: "h-4",
+  lg: "h-3.5",
 };
 
 const GradientProgress: React.FC<Props> = ({
   value,
   className,
-  height = "lg",
+  height = "md",
   from = "from-fuchsia-500",
   to = "to-amber-400",
   showPercent = true,
@@ -35,10 +35,14 @@ const GradientProgress: React.FC<Props> = ({
           style={{ width: `${v}%`, transition: "width 300ms ease" }}
         />
         <div className="absolute inset-0 rounded-full ring-1 ring-black/5 dark:ring-white/5 pointer-events-none" />
+        {showPercent && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[10px] font-semibold text-white drop-shadow">
+              {v}%
+            </span>
+          </div>
+        )}
       </div>
-      {showPercent && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-gray-300 font-medium">{v}%</div>
-      )}
     </div>
   );
 };
