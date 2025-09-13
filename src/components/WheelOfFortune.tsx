@@ -59,9 +59,9 @@ const WheelOfFortune: React.FC = () => {
   const v2Segments = useMemo<Segment[]>(
     () =>
       videos.map((v) => ({
-        label: v.title,
+        label: v.title, // titres V2 sans préfixe 'Prix X - '
         image: v.poster ?? "/placeholder.svg",
-        points: 0,
+        points: v.points, // utiliser les points définis pour la V2
       })),
     [videos]
   );
