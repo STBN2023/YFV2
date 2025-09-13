@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import CollectionGrid from "@/components/CollectionGrid";
-import { useSession } from "@/components/auth/SessionProvider";
 import FloatingNav from "@/components/FloatingNav";
 
 type Row = {
@@ -19,7 +17,6 @@ type Row = {
 const Leaderboard = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
-  const { session } = useSession();
 
   useEffect(() => {
     supabase
@@ -41,12 +38,6 @@ const Leaderboard = () => {
           <h1 className="text-3xl font-bold">Classement</h1>
           <Link to="/" className="text-blue-600 dark:text-blue-400 hover:underline">← Retour</Link>
         </div>
-
-        {session && (
-          <section id="collection" className="scroll-mt-24">
-            <CollectionGrid />
-          </section>
-        )}
 
         <div>
           <h2 className="text-xl font-semibold mb-3">Top joueurs</h2>
