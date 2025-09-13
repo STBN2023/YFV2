@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSession } from "@/components/auth/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useV2Videos } from "@/hooks/use-v2-videos";
-import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
+import GradientProgress from "@/components/GradientProgress";
 
 const V2Progress: React.FC = () => {
   const { session } = useSession();
@@ -54,13 +54,18 @@ const V2Progress: React.FC = () => {
   if (!userId || total === 0) return null;
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md border-white/60 dark:border-white/10 bg-white/90 dark:bg-neutral-900/80 backdrop-blur">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-sm font-medium">Progression V2</div>
-          <div className="text-xs text-gray-600">{discovered}/{total} vidéos</div>
+          <div className="text-sm font-semibold">Progression V2</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">{discovered}/{total} vidéos</div>
         </div>
-        <Progress value={pct} />
+        <GradientProgress
+          value={pct}
+          height="lg"
+          from="from-rose-500"
+          to="to-amber-400"
+        />
       </CardContent>
     </Card>
   );
