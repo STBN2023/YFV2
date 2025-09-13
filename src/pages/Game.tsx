@@ -7,6 +7,7 @@ import AudioToggle from "@/components/AudioToggle";
 import CollectionProgress from "@/components/CollectionProgress";
 import SpinHistory from "@/components/SpinHistory";
 import FloatingNav from "@/components/FloatingNav";
+import V2Progress from "@/components/V2Progress";
 
 const Game = () => {
   return (
@@ -26,6 +27,7 @@ const Game = () => {
       <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
         <CollectionProgress />
         <SpinHistory />
+        <V2Progress />
       </div>
 
       <MadeWithDyad />
