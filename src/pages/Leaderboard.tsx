@@ -22,11 +22,19 @@ const Leaderboard = () => {
     supabase
       .from("profiles")
       .select("id, first_name, last_name, avatar_url, points")
+      .gt("points", 0) // filtre serveur
       .order("points", { ascending: false })
       .limit(50)
       .then(({ data, error }) => {
         if (error) throw error;
-        setRows(data ?? []);
+
+        // Filtre client: supprime toute ligne avec points <= 0 ou non valide
+        const filtered = (data as Row[] | null)?.filter((r) => {
+          const p = Number(r.points ?? 0);
+          return Number.isFinite(p) && p > 0;
+        }) ?? [];
+
+        setRows(filtered);
         setLoading(false);
       });
   }, []);
@@ -43,6 +51,8 @@ const Leaderboard = () => {
           <h2 className="text-xl font-semibold mb-3">Top joueurs</h2>
           {loading ? (
             <div className="text-gray-600 dark:text-gray-300">Chargement...</div>
+          ) : rows.length === 0 ? (
+            <div className="text-gray-600 dark:text-gray-300">Pas encore de scores à afficher.</div>
           ) : (
             <div className="bg-white/90 dark:bg-neutral-900/80 backdrop-blur border border-white/60 dark:border-white/10 rounded-lg shadow overflow-hidden">
               <Table>
