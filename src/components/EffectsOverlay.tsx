@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 
-type EffectType = "confetti" | "smoke" | "burst" | "sparkles";
+type EffectType = "confetti" | "smoke" | "burst" | "sparkles" | "unlockV1" | "unlockV2";
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i);
 
@@ -129,6 +129,21 @@ const EffectsOverlay: React.FC<{ type: EffectType }> = ({ type }) => {
       {type === "smoke" && <Smoke />}
       {type === "burst" && <Burst />}
       {type === "sparkles" && <Sparkles />}
+
+      {type === "unlockV1" && (
+        <>
+          <Sparkles />
+          <Burst />
+        </>
+      )}
+
+      {type === "unlockV2" && (
+        <>
+          <Confetti />
+          <Burst />
+          <Smoke />
+        </>
+      )}
     </div>
   );
 };

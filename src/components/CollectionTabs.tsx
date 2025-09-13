@@ -30,8 +30,9 @@ const CollectionTabs = () => {
       return "v1";
     }
   });
-  const [effect, setEffect] = useState<"confetti" | null>(null);
+  const [effect, setEffect] = useState<"confetti" | "unlockV1" | "unlockV2" | null>(null);
   const prevCompleteRef = useRef<boolean>(false);
+  const prevDiscoveredRef = useRef<number>(0);
   const [unlockOverride, setUnlockOverride] = useState(false);
   const location = useLocation();
 
@@ -72,6 +73,12 @@ const CollectionTabs = () => {
   );
   const v1Complete = totalV1 > 0 && discoveredV1 >= totalV1;
 
+  // Init prev discovered to current to éviter un faux déclenchement au montage
+  useEffect(() => {
+    prevDiscoveredRef.current = discoveredV1;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // init once
+
   // Détection robuste de l'override test (query params variés, hash, localStorage)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -111,12 +118,24 @@ const CollectionTabs = () => {
     setUnlockOverride(viaQuery || viaStorage);
   }, [location.search, location.hash]);
 
-  // Célébration uniquement si complétion réelle (pas via override)
+  // Animation: première découverte V1 -> unlockV1 (si on partait de 0)
+  useEffect(() => {
+    const prev = prevDiscoveredRef.current;
+    if (prev === 0 && discoveredV1 > 0) {
+      setEffect("unlockV1");
+      showSuccess("Niveau 1 débloqué !");
+      const t = window.setTimeout(() => setEffect(null), 2200);
+      return () => window.clearTimeout(t);
+    }
+    prevDiscoveredRef.current = discoveredV1;
+  }, [discoveredV1]);
+
+  // Célébration uniquement si complétion réelle (pas via override): unlockV2
   useEffect(() => {
     if (!prevCompleteRef.current && v1Complete) {
-      setEffect("confetti");
+      setEffect("unlockV2");
       showSuccess("Collection V1 complétée ! V2 débloquée 🎉");
-      const t = window.setTimeout(() => setEffect(null), 2800);
+      const t = window.setTimeout(() => setEffect(null), 3000);
       return () => window.clearTimeout(t);
     }
     prevCompleteRef.current = v1Complete;
@@ -151,7 +170,7 @@ const CollectionTabs = () => {
 
   return (
     <div className="relative">
-      {effect && <EffectsOverlay type="confetti" />}
+      {effect && <EffectsOverlay type={effect} />}
 
       <Tabs value={tab} onValueChange={onChangeTab} className="w-full">
         <div className="flex items-center justify-between mb-4">
