@@ -20,13 +20,6 @@ const Index = () => {
           >
             <Link to="/pseudo">Jouer maintenant</Link>
           </Button>
-
-          <Link
-            to="/admin"
-            className="text-xs text-blue-600 hover:text-blue-700 underline"
-          >
-            Admin: uploader les vidéos V2
-          </Link>
         </div>
       </div>
 
