@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type Props = {
   src: string;
@@ -29,67 +29,88 @@ const VideoTile: React.FC<Props> = ({ src, fallbackSrcs = [], poster, title, cla
     return Array.from(new Set(all));
   }, [src, fallbackSrcs]);
 
-  const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setFailed(false);
     setLoaded(false);
+    setShowOverlay(false);
+    setErrorCount(0);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    // Si rien n'est chargé au bout de 1.2s, on montre l'overlay de debug
+    timerRef.current = window.setTimeout(() => {
+      if (!loaded) setShowOverlay(true);
+    }, 1200);
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sources.join("|")]);
 
   useEffect(() => {
-    // Logs utiles pour diagnostiquer
     // eslint-disable-next-line no-console
     console.debug("[VideoTile] Sources résolues:", { title, sources });
   }, [sources, title]);
 
-  if ((failed && !loaded) || sources.length === 0) {
-    const debugLinks = sources.slice(0, 3);
-    return (
-      <div className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 flex items-center justify-center ${className ?? ""}`}>
-        <div className="text-center text-gray-700 dark:text-gray-200 px-3">
-          <div className="text-sm font-medium">Prévisualisation indisponible</div>
-          <div className="text-xs opacity-80 mb-2">{title ?? "Vidéo manquante"}</div>
-          {debugLinks.length > 0 && (
-            <div className="text-[10px] opacity-90 space-y-1">
-              <div>Essaye d’ouvrir:</div>
-              <ul className="space-y-0.5">
-                {debugLinks.map((u, i) => (
-                  <li key={i}>
-                    <a className="underline underline-offset-2 text-blue-600 dark:text-blue-400 break-all" href={u} target="_blank" rel="noreferrer">
-                      Source {i + 1}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <video
-      className={`w-full h-full object-cover ${className ?? ""}`}
-      poster={poster}
-      muted
-      playsInline
-      autoPlay
-      loop
-      preload="metadata"
-      aria-label={title}
-      onLoadedData={() => setLoaded(true)}
-      onError={() => {
-        // eslint-disable-next-line no-console
-        console.error("[VideoTile] Erreur de lecture", { title, sources });
-        setFailed(true);
-      }}
-    >
-      {sources.map((s, i) => (
-        <source key={i} src={s} type={guessMime(s)} />
-      ))}
-    </video>
+    <div className={`relative ${className ?? ""}`}>
+      <video
+        className="w-full h-full object-cover"
+        poster={poster}
+        muted
+        playsInline
+        autoPlay
+        loop
+        preload="metadata"
+        aria-label={title}
+        onLoadedData={() => {
+          setLoaded(true);
+          setShowOverlay(false);
+        }}
+        onError={() => {
+          setErrorCount((c) => c + 1);
+          // eslint-disable-next-line no-console
+          console.error("[VideoTile] Erreur de lecture", { title, sources });
+          // On n'affiche pas immédiatement le fallback; on laisse le browser tester les sources suivantes
+          // L'overlay apparaîtra si rien ne se charge après le délai.
+        }}
+      >
+        {sources.map((s, i) => (
+          <source key={i} src={s} type={guessMime(s)} />
+        ))}
+      </video>
+
+      {showOverlay && !loaded && (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-200/90 to-gray-300/90 dark:from-neutral-800/90 dark:to-neutral-700/90 flex items-center justify-center px-3">
+          <div className="text-center text-gray-800 dark:text-gray-100">
+            <div className="text-sm font-medium">Prévisualisation indisponible</div>
+            <div className="text-xs opacity-80 mb-2">{title ?? "Vidéo manquante"}</div>
+            {sources.length > 0 && (
+              <div className="text-[10px] opacity-90 space-y-1">
+                <div>Essaye d’ouvrir ces liens (la première qui s’ouvre doit être lue ici) :</div>
+                <ul className="space-y-0.5">
+                  {sources.slice(0, 3).map((u, i) => (
+                    <li key={i}>
+                      <a
+                        className="underline underline-offset-2 text-blue-600 dark:text-blue-400 break-all"
+                        href={u}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Source {i + 1}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {errorCount > 0 && <div className="mt-2">Erreurs réseaux: {errorCount}</div>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

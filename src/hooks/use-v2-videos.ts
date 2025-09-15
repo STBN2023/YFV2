@@ -34,37 +34,32 @@ function withAltExtensions(name: string) {
 }
 
 function filenameVariants(filename: string) {
-  // Garder l’original tel quel (y compris espaces/maj.)
   const original = filename;
-
-  // Variantes normalisées (trim avant extension + espaces réduits)
   const trimmed = filename.trim();
   const noTrailingBeforeExt = trimmed.replace(/\s+(\.[A-Za-z0-9]+)$/i, "$1");
   const collapsedSpaces = noTrailingBeforeExt.replace(/\s+/g, " ");
 
-  // Décliner chaque variante avec extensions alternatives
-  const pool = [original, trimmed, noTrailingBeforeExt, collapsedSpaces]
-    .flatMap((v) => withAltExtensions(v));
+  const pool = [original, trimmed, noTrailingBeforeExt, collapsedSpaces].flatMap((v) =>
+    withAltExtensions(v),
+  );
 
-  // Ajouter versions encodées (sur le nom de fichier uniquement)
   const encoded = pool.map((f) => encodeURIComponent(f));
-
   return Array.from(new Set([...pool, ...encoded]));
 }
 
 function supabaseVariants(originalSrc: string) {
-  // 1) Chemin “préféré” (v2/<fichier>) à partir de l’API utilitaire
-  const supaPreferred = v2VideoUrl(originalSrc, "videos");
-
-  // 2) Variantes racine et sous-dossier v2 avec noms/extension alternatifs
+  // Variantes racine et sous-dossier v2 avec noms/extension alternatifs
   const { filename } = splitDirAndFilename(originalSrc);
   const fns = filenameVariants(filename);
 
   const rootUrls = fns.map((f) => publicUrl("videos", f));
   const v2Urls = fns.map((f) => publicUrl("videos", `v2/${f}`));
 
-  // Ordre: préféré -> racine -> v2 (les doublons sont enlevés)
-  return Array.from(new Set([supaPreferred, ...rootUrls, ...v2Urls]));
+  // Ancienne "préférée": v2/<fichier> (on la garde en toute fin, au cas où)
+  const supaPreferred = v2VideoUrl(originalSrc, "videos");
+
+  // Priorité: racine -> v2/ -> préférée
+  return Array.from(new Set([...rootUrls, ...v2Urls, supaPreferred]));
 }
 
 function buildLocalPaths(originalSrc: string) {
@@ -74,17 +69,10 @@ function buildLocalPaths(originalSrc: string) {
   const variants = filenameVariants(filename);
   const baseVariants = variants.map((f) => `${dir}${f}`);
 
-  // Ajout des versions encodées complètes (encodeURI sur tout le chemin)
   const encodedWhole = baseVariants.map((v) => encodeURI(v));
-
   return Array.from(new Set([src, ...baseVariants, ...encodedWhole]));
 }
 
-/**
- * Résout les URLs des vidéos V2:
- * - priorité: Supabase Storage (bucket 'videos') en testant plusieurs chemins/variantes
- * - fallback: variantes locales (utile en dev)
- */
 export function useV2Videos() {
   const videos = useMemo<ResolvedVideo[]>(
     () =>
@@ -99,7 +87,7 @@ export function useV2Videos() {
           fallbackSrcs: rest,
         };
       }),
-    []
+    [],
   );
 
   return { videos };
