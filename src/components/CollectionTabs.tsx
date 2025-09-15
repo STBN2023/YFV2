@@ -88,11 +88,12 @@ const CollectionTabs = () => {
     prevDiscoveredRef.current = discoveredV1;
   }, [discoveredV1]);
 
-  // Célébration à la complétion réelle: unlockV2
+  // Célébration à la complétion réelle: unlockV2 + bascule auto sur l'onglet V2
   useEffect(() => {
     if (!prevCompleteRef.current && v1Complete) {
       setEffect("unlockV2");
       showSuccess("Collection V1 complétée ! V2 débloquée 🎉");
+      setTab("v2");
       const t = window.setTimeout(() => setEffect(null), 3000);
       return () => window.clearTimeout(t);
     }
