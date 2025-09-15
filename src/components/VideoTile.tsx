@@ -10,10 +10,22 @@ type Props = {
   className?: string;
 };
 
+function guessMime(url: string): string | undefined {
+  try {
+    const clean = url.split("?")[0].split("#")[0];
+    const ext = (clean.split(".").pop() || "").toLowerCase();
+    if (ext === "mp4") return "video/mp4";
+    if (ext === "webm") return "video/webm";
+    if (ext === "mov") return "video/quicktime";
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
 const VideoTile: React.FC<Props> = ({ src, fallbackSrcs = [], poster, title, className }) => {
   const sources = useMemo(() => {
     const all = [src, ...fallbackSrcs].filter(Boolean);
-    // Dédupliquer en conservant l'ordre
     return Array.from(new Set(all));
   }, [src, fallbackSrcs]);
 
@@ -43,7 +55,7 @@ const VideoTile: React.FC<Props> = ({ src, fallbackSrcs = [], poster, title, cla
       onError={() => setFailed(true)}
     >
       {sources.map((s, i) => (
-        <source key={i} src={s} type="video/mp4" />
+        <source key={i} src={s} type={guessMime(s)} />
       ))}
     </video>
   );

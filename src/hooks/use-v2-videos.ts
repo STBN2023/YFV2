@@ -17,30 +17,53 @@ function splitDirAndFilename(src: string) {
   return { dir, filename };
 }
 
+function withAltExtensions(name: string) {
+  const m = name.match(/^(.*?)(\.[A-Za-z0-9]+)?$/);
+  const base = (m?.[1] ?? name).replace(/\s+$/, "");
+  const ext = m?.[2] ?? "";
+  const exts = new Set<string>([
+    ext || ".mp4",
+    ".mp4",
+    ".MP4",
+    ".webm",
+    ".WEBM",
+    ".mov",
+    ".MOV",
+  ]);
+  return Array.from(exts).map((e) => `${base}${e}`);
+}
+
 function filenameVariants(filename: string) {
+  // Garder l’original tel quel (y compris espaces/maj.)
+  const original = filename;
+
+  // Variantes normalisées (trim avant extension + espaces réduits)
   const trimmed = filename.trim();
   const noTrailingBeforeExt = trimmed.replace(/\s+(\.[A-Za-z0-9]+)$/i, "$1");
   const collapsedSpaces = noTrailingBeforeExt.replace(/\s+/g, " ");
-  // Garder l’original en premier
-  const base = [filename, trimmed, noTrailingBeforeExt, collapsedSpaces];
-  // Variantes encodées
-  const encoded = base.map((f) => encodeURIComponent(f));
-  return Array.from(new Set([...base, ...encoded]));
+
+  // Décliner chaque variante avec extensions alternatives
+  const pool = [original, trimmed, noTrailingBeforeExt, collapsedSpaces]
+    .flatMap((v) => withAltExtensions(v));
+
+  // Ajouter versions encodées (sur le nom de fichier uniquement)
+  const encoded = pool.map((f) => encodeURIComponent(f));
+
+  return Array.from(new Set([...pool, ...encoded]));
 }
 
 function supabaseVariants(originalSrc: string) {
-  // 1) Chemin prévu: v2/<filename> (comme notre mapping standard)
+  // 1) Chemin “préféré” (v2/<fichier>) à partir de l’API utilitaire
   const supaPreferred = v2VideoUrl(originalSrc, "videos");
 
-  // 2) Autres variantes: fichier à la racine du bucket (sans dossier v2/)
+  // 2) Variantes racine et sous-dossier v2 avec noms/extension alternatifs
   const { filename } = splitDirAndFilename(originalSrc);
   const fns = filenameVariants(filename);
-  const rootUrls = fns.map((f) => publicUrl("videos", f));
 
-  // 3) Variantes sous v2/ (au cas où les noms diffèrent: espaces, trim, etc.)
+  const rootUrls = fns.map((f) => publicUrl("videos", f));
   const v2Urls = fns.map((f) => publicUrl("videos", `v2/${f}`));
 
-  // Ordre: URL “préférée” (v2/ exact) -> variantes racine -> variantes v2/
+  // Ordre: préféré -> racine -> v2 (les doublons sont enlevés)
   return Array.from(new Set([supaPreferred, ...rootUrls, ...v2Urls]));
 }
 
@@ -59,7 +82,7 @@ function buildLocalPaths(originalSrc: string) {
 
 /**
  * Résout les URLs des vidéos V2:
- * - priorité: Supabase Storage (bucket 'videos') en testant plusieurs chemins
+ * - priorité: Supabase Storage (bucket 'videos') en testant plusieurs chemins/variantes
  * - fallback: variantes locales (utile en dev)
  */
 export function useV2Videos() {
