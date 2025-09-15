@@ -37,7 +37,6 @@ const WheelOfFortune: React.FC = () => {
   const [effect, setEffect] = useState<EffectType | null>(null);
   const [winMessage, setWinMessage] = useState<string>("");
   const [v1Complete, setV1Complete] = useState(false);
-  const [overrideUnlock, setOverrideUnlock] = useState(false);
 
   const wheelRef = useRef<HTMLDivElement>(null);
   const currentRotationRef = useRef(0);
@@ -59,20 +58,12 @@ const WheelOfFortune: React.FC = () => {
   const v2Segments = useMemo<Segment[]>(
     () =>
       videos.map((v) => ({
-        label: v.title, // titres V2 sans préfixe 'Prix X - '
+        label: v.title,
         image: v.poster ?? "/placeholder.svg",
-        points: v.points, // utiliser les points définis pour la V2
+        points: v.points,
       })),
     [videos]
   );
-
-  useEffect(() => {
-    try {
-      setOverrideUnlock(localStorage.getItem("unlock-v2") === "1");
-    } catch {
-      setOverrideUnlock(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (!userId || v1Segments.length === 0) {
@@ -96,7 +87,8 @@ const WheelOfFortune: React.FC = () => {
       });
   }, [userId, v1Segments]);
 
-  const v2Unlocked = v1Complete || overrideUnlock;
+  // V2 uniquement si V1 complétée (plus d'override)
+  const v2Unlocked = v1Complete;
 
   const pool = useMemo<Segment[]>(
     () => (v2Unlocked ? [...v1Segments, ...v2Segments] : v1Segments),

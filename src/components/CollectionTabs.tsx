@@ -12,7 +12,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { showError, showSuccess } from "@/utils/toast";
 import EffectsOverlay from "@/components/EffectsOverlay";
 import V2Grid from "@/components/V2Grid";
-import { useLocation } from "react-router-dom";
 
 type Counts = Record<string, number>;
 const TAB_STORAGE_KEY = "collection-tab";
@@ -33,8 +32,6 @@ const CollectionTabs = () => {
   const [effect, setEffect] = useState<"confetti" | "unlockV1" | "unlockV2" | null>(null);
   const prevCompleteRef = useRef<boolean>(false);
   const prevDiscoveredRef = useRef<number>(0);
-  const [unlockOverride, setUnlockOverride] = useState(false);
-  const location = useLocation();
 
   const fetchCounts = () => {
     if (!userId) {
@@ -79,45 +76,6 @@ const CollectionTabs = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // init once
 
-  // Détection robuste de l'override test (query params variés, hash, localStorage)
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-
-    const readParam = (name: string) =>
-      params.get(name) ??
-      params.get(name.toLowerCase()) ??
-      params.get(name.toUpperCase());
-
-    const isTruthy = (val: string | null) => {
-      if (val === null) return false;
-      const v = val.trim().toLowerCase();
-      if (v === "") return true;
-      if (["1", "true", "yes", "on", "y", "t"].includes(v)) return true;
-      if (["0", "false", "no", "off", "n", "f"].includes(v)) return false;
-      return true;
-    };
-
-    const viaQuery =
-      isTruthy(readParam("unlockV2")) ||
-      isTruthy(readParam("unlock-v2")) ||
-      isTruthy(readParam("v2")) ||
-      (location.hash?.toLowerCase().includes("v2") ?? false);
-
-    let viaStorage = false;
-    try {
-      const stored =
-        localStorage.getItem("unlock-v2") ?? localStorage.getItem("unlockV2");
-      viaStorage = isTruthy(stored ?? null);
-      if (viaQuery) {
-        localStorage.setItem("unlock-v2", "1");
-      }
-    } catch {
-      viaStorage = false;
-    }
-
-    setUnlockOverride(viaQuery || viaStorage);
-  }, [location.search, location.hash]);
-
   // Animation: première découverte V1 -> unlockV1 (si on partait de 0)
   useEffect(() => {
     const prev = prevDiscoveredRef.current;
@@ -130,7 +88,7 @@ const CollectionTabs = () => {
     prevDiscoveredRef.current = discoveredV1;
   }, [discoveredV1]);
 
-  // Célébration uniquement si complétion réelle (pas via override): unlockV2
+  // Célébration à la complétion réelle: unlockV2
   useEffect(() => {
     if (!prevCompleteRef.current && v1Complete) {
       setEffect("unlockV2");
@@ -141,9 +99,10 @@ const CollectionTabs = () => {
     prevCompleteRef.current = v1Complete;
   }, [v1Complete]);
 
-  const v2Unlocked = v1Complete || unlockOverride;
+  // V2 uniquement si V1 complétée (plus d'override)
+  const v2Unlocked = v1Complete;
 
-  // IMPORTANT: ne plus forcer l'onglet V2; si V2 est verrouillé mais sélectionné (stocké), on revient à V1.
+  // Si V2 est verrouillée mais sélectionnée (stocké), on revient à V1.
   useEffect(() => {
     if (!v2Unlocked && tab === "v2") {
       setTab("v1");
