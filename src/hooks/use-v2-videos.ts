@@ -36,8 +36,7 @@ function buildLocalPaths(originalSrc: string) {
     ];
   });
 
-  const unique = Array.from(new Set([...baseVariants, ...encodedVariants]));
-  return unique;
+  return Array.from(new Set([...baseVariants, ...encodedVariants]));
 }
 
 /**
@@ -50,7 +49,7 @@ export function useV2Videos() {
     () =>
       V2_VIDEOS.map((v) => {
         const localVariants = buildLocalPaths(v.src);
-        const supa = v2VideoUrl(v.src, "videos"); // fallback Supabase
+        const supa = v2VideoUrl(v.src, "videos");
         const all = Array.from(new Set([...localVariants, supa]));
         const [first, ...rest] = all;
         return {
