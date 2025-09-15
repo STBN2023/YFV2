@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/components/auth/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +18,7 @@ const SpinHistory: React.FC = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchLast = () => {
+  const fetchLast = useCallback(() => {
     if (!userId) {
       setRows([]);
       return;
@@ -35,17 +35,43 @@ const SpinHistory: React.FC = () => {
         setRows((data as Row[]) ?? []);
         setLoading(false);
       });
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchLast();
-  }, [userId]);
+  }, [fetchLast]);
 
+  // Réagit aux événements internes "points-updated"
   useEffect(() => {
     const handler = () => fetchLast();
     window.addEventListener("points-updated", handler as EventListener);
     return () => window.removeEventListener("points-updated", handler as EventListener);
-  }, []);
+  }, [fetchLast]);
+
+  // Réagit aux inserts via Supabase Realtime
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("spins-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "spins",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          fetchLast();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchLast]);
 
   if (!userId) return null;
 
@@ -62,7 +88,9 @@ const SpinHistory: React.FC = () => {
             {rows.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-2">
                 <span className="truncate max-w-[50%]">{r.prize_label ?? "—"}</span>
-                <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleString()}</span>
+                <span className="text-xs text-gray-500">
+                  {new Date(r.created_at).toLocaleString()}
+                </span>
                 <span className="font-semibold">+{r.points ?? 0}</span>
               </li>
             ))}
