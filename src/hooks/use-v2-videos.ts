@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { V2_VIDEOS, type V2Video } from "@/data/v2-videos";
+import { v2VideoUrl } from "@/integrations/supabase/storage";
 
 export type ResolvedVideo = V2Video & {
   publicSrc: string;
@@ -41,14 +42,19 @@ function buildLocalPaths(originalSrc: string) {
 }
 
 /**
- * Résout les URLs locales des vidéos V2 (servies depuis /public).
+ * Résout les URLs des vidéos V2:
+ * - priorité: Supabase Storage (bucket 'videos', chemin v2/...)
+ * - fallback: multiples variantes locales dans /public pour les devs locaux
  */
 export function useV2Videos() {
   const videos = useMemo<ResolvedVideo[]>(
     () =>
       V2_VIDEOS.map((v) => {
-        const paths = buildLocalPaths(v.src);
-        const [first, ...rest] = paths;
+        const supa = v2VideoUrl(v.src, "videos"); // ex: videos/v2/xxx.mp4
+        const localVariants = buildLocalPaths(v.src);
+        // On met Supabase en premier, puis les variantes locales
+        const all = Array.from(new Set([supa, ...localVariants]));
+        const [first, ...rest] = all;
         return {
           ...v,
           publicSrc: first,
