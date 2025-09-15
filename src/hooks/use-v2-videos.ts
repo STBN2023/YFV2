@@ -26,6 +26,7 @@ function buildLocalPaths(originalSrc: string) {
     `${dir}${collapsedSpaces}`,
   ];
 
+  // Variantes encodées (gère espaces/accents)
   const encodedVariants = baseVariants.flatMap((v) => {
     const ls = v.lastIndexOf("/");
     const d = ls >= 0 ? v.slice(0, ls + 1) : "/";
@@ -41,16 +42,16 @@ function buildLocalPaths(originalSrc: string) {
 
 /**
  * Résout les URLs des vidéos V2:
- * - priorité: fichiers locaux (public/prizes/v2/...)
- * - fallback: Supabase Storage (bucket 'videos', chemin v2/...)
+ * - priorité: Supabase Storage (bucket 'videos', chemin v2/...)
+ * - fallback: variantes locales (utile en dev)
  */
 export function useV2Videos() {
   const videos = useMemo<ResolvedVideo[]>(
     () =>
       V2_VIDEOS.map((v) => {
-        const localVariants = buildLocalPaths(v.src);
         const supa = v2VideoUrl(v.src, "videos");
-        const all = Array.from(new Set([...localVariants, supa]));
+        const localVariants = buildLocalPaths(v.src);
+        const all = Array.from(new Set([supa, ...localVariants]));
         const [first, ...rest] = all;
         return {
           ...v,
